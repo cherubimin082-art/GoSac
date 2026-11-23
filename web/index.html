@@ -76,6 +76,13 @@ h1{font-size:1.5rem; margin:0; letter-spacing:-0.01em}
 }
 .pill.good{background:var(--good-bg); color:var(--good)}
 .pill.pending{background:var(--pending-bg); color:var(--pending)}
+.pill-stack{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0}
+
+.code-link{
+  font-size:0.78rem; color:var(--accent); text-decoration:none; font-weight:600;
+  align-self:flex-start;
+}
+.code-link:hover{text-decoration:underline}
 
 .platforms{display:flex; flex-direction:column; gap:8px}
 .platform-row{
@@ -119,6 +126,7 @@ footer a{color:var(--accent)}
       </div>
     </div>
     <div class="legend">
+      <span id="build-summary"></span>
       <span><i class="dot good"></i>Connected</span>
       <span><i class="dot pending"></i>Not connected</span>
     </div>
@@ -127,6 +135,7 @@ footer a{color:var(--accent)}
   <div class="grid" id="grid"></div>
 
   <footer>
+    All 10 agents are built and tested in mock mode (code + README for each on GitHub).
     Connect opens the real platform in a new tab for you to grant access there.
     This page can't complete OAuth itself, so once you've granted access, use
     "Mark connected" to track status here &mdash; that status stays on this device only.
@@ -134,30 +143,32 @@ footer a{color:var(--accent)}
 </div>
 
 <script>
+const REPO = "https://github.com/cherubimin082-art/GoSac/tree/main/agents";
+
 const AGENTS = [
   { id:"sonar", name:"Sonar", role:"GA4 conversion tracking &mdash; form fills, call clicks, WhatsApp clicks.",
-    platforms:[{ name:"Google Analytics (GA4)", url:"https://analytics.google.com" }] },
+    built:true, platforms:[{ name:"Google Analytics (GA4)", url:"https://analytics.google.com" }] },
   { id:"coral", name:"Coral", role:"IndiaMART catalog rewrites and lead routing.",
-    platforms:[{ name:"IndiaMART Seller Panel", url:"https://seller.indiamart.com" }] },
+    built:true, platforms:[{ name:"IndiaMART Seller Panel", url:"https://seller.indiamart.com" }] },
   { id:"current", name:"Current", role:"Google Ads campaign build and daily bid tuning.",
-    platforms:[{ name:"Google Ads", url:"https://ads.google.com" }] },
+    built:true, platforms:[{ name:"Google Ads", url:"https://ads.google.com" }] },
   { id:"harbor", name:"Harbor", role:"Amazon Brand Storefront and Flipkart Seller Portal setup.",
-    platforms:[
+    built:true, platforms:[
       { name:"Amazon Seller Central", url:"https://sellercentral.amazon.in" },
       { name:"Flipkart Seller Hub", url:"https://seller.flipkart.com" }
     ] },
   { id:"compass", name:"Compass", role:"Routes SKUs between FBA and merchant dispatch.",
-    platforms:[{ name:"Amazon Seller Central (FBA)", url:"https://sellercentral.amazon.in/fba/inbound" }] },
+    built:true, platforms:[{ name:"Amazon Seller Central (FBA)", url:"https://sellercentral.amazon.in/fba/inbound" }] },
   { id:"horizon", name:"Horizon", role:"Onboards GoSac onto the Meesho marketplace.",
-    platforms:[{ name:"Meesho Supplier Panel", url:"https://supplier.meesho.com" }] },
+    built:true, platforms:[{ name:"Meesho Supplier Panel", url:"https://supplier.meesho.com" }] },
   { id:"pearl", name:"Pearl", role:"sevAI listing generation &mdash; titles, bullets, backend keywords.",
-    platforms:[] },
+    built:true, platforms:[] },
   { id:"undertow", name:"Undertow", role:"Meta retargeting campaigns.",
-    platforms:[{ name:"Meta Business Suite", url:"https://business.facebook.com" }] },
+    built:true, platforms:[{ name:"Meta Business Suite", url:"https://business.facebook.com" }] },
   { id:"beacon", name:"Beacon", role:"Pulls every agent's data into one live dashboard.",
-    platforms:[{ name:"Looker Studio", url:"https://lookerstudio.google.com" }] },
+    built:true, platforms:[{ name:"Looker Studio", url:"https://lookerstudio.google.com" }] },
   { id:"mariner", name:"Mariner", role:"Schedules the fleet, holds every approval gate.",
-    platforms:[] }
+    built:true, platforms:[] }
 ];
 
 const STORE_KEY = "gosac-fleet-connections";
@@ -179,6 +190,10 @@ function render(){
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
+  const builtCount = AGENTS.filter(a => a.built).length;
+  document.getElementById("build-summary").textContent =
+    `${builtCount}/${AGENTS.length} agents built`;
+
   AGENTS.forEach(agent => {
     const card = document.createElement("div");
     card.className = "card";
@@ -194,11 +209,24 @@ function render(){
         <h3 class="agent-name">${agent.name}</h3>
         <p class="agent-role">${agent.role}</p>
       </div>
-      ${ total > 0
-          ? `<span class="pill ${allConnected ? 'good' : 'pending'}">${connectedCount}/${total} connected</span>`
-          : `<span class="pill pending">Internal</span>` }
+      <span class="pill-stack">
+        <span class="pill ${agent.built ? 'good' : 'pending'}">${agent.built ? 'Built ✓' : 'Not built'}</span>
+        ${ total > 0
+            ? `<span class="pill ${allConnected ? 'good' : 'pending'}">${connectedCount}/${total} connected</span>`
+            : `<span class="pill pending">Internal</span>` }
+      </span>
     `;
     card.appendChild(top);
+
+    if (agent.built){
+      const link = document.createElement("a");
+      link.className = "code-link";
+      link.href = `${REPO}/${agent.id}`;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "View code & README →";
+      card.appendChild(link);
+    }
 
     if (total === 0){
       const internal = document.createElement("div");

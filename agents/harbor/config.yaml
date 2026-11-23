@@ -1,0 +1,45 @@
+# Harbor Agent config — fill in as each prerequisite is actually confirmed.
+# IMPORTANT: Amazon Brand Registry enrollment and Flipkart seller onboarding
+# are UI-only flows on both platforms - neither offers a public API to
+# submit them. Harbor cannot and does not attempt to automate that
+# submission. What it DOES do: gate-check that every prerequisite document
+# is actually in hand before you submit manually, and (once accounts exist)
+# sync basic SKU/category metadata via each platform's seller API.
+
+brand:
+  name: "GoSac"
+  # Set these true only once the actual document/account genuinely exists -
+  # this file is a readiness record, not a wishlist.
+  trademark_registered_or_pending: false
+  trademark_doc_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  gst_doc_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  bank_account_confirmed: false
+  brand_logo_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  brand_story_content: ""   # short brand description for the storefront About section
+
+amazon:
+  seller_central_account_exists: false
+  brand_registry_enrolled: false
+  category_approvals_needed:
+    - "Grocery & Gourmet Foods"   # adjust to GoSac's real categories
+  sp_api:
+    credentials_path: "REPLACE_WITH_PATH_TO_sp-api-credentials.json"
+
+flipkart:
+  seller_hub_account_exists: false
+  category_approvals_needed:
+    - "Home & Kitchen"
+  seller_api:
+    credentials_path: "REPLACE_WITH_PATH_TO_flipkart-api-credentials.json"
+
+# SKUs to associate with the brand once storefronts exist.
+skus:
+  - sku: "GOSAC-MESH-1KG"
+    title: "GoSac Reusable Produce Mesh Bag - 1kg Set"
+    category: "Home & Kitchen"
+  - sku: "GOSAC-MESH-3KG"
+    title: "GoSac Reusable Produce Mesh Bag - 3kg Set"
+    category: "Home & Kitchen"
+  - sku: "GOSAC-MESH-5KG"
+    title: "GoSac Reusable Produce Mesh Bag - 5kg Set"
+    category: "Home & Kitchen"

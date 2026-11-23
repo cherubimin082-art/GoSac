@@ -1,0 +1,39 @@
+# Horizon Agent config — Meesho onboarding readiness + catalog prep.
+# NOTE: Meesho supplier registration itself (supplier.meesho.com signup,
+# phone OTP, document verification) is a UI-only flow with no public API -
+# Horizon cannot submit that application for you. What it does: checks
+# every prerequisite is in hand, and generates the bulk catalog upload
+# file in Meesho's expected format so uploading is a single manual step
+# instead of building the file by hand.
+
+business:
+  gst_doc_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  pan_doc_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  bank_account_confirmed: false
+  bank_proof_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"   # cancelled cheque / bank statement
+  business_address_proof_path: "REPLACE_WITH_PATH_OR_LEAVE_BLANK"
+  supplier_panel_account_exists: false
+
+catalog_output_path: "meesho_catalog.csv"
+
+# Products to list. Only real values go in - unfilled fields are skipped
+# in the generated row, never guessed.
+products:
+  - sku: "GOSAC-MESH-1KG"
+    title: "GoSac Reusable Produce Mesh Bag - 1kg Set"
+    category: "Kitchen & Dining"
+    size: "1kg"
+    price_inr: "REPLACE_WITH_PRICE"
+    mrp_inr: "REPLACE_WITH_MRP"
+  - sku: "GOSAC-MESH-3KG"
+    title: "GoSac Reusable Produce Mesh Bag - 3kg Set"
+    category: "Kitchen & Dining"
+    size: "3kg"
+    price_inr: "REPLACE_WITH_PRICE"
+    mrp_inr: "REPLACE_WITH_MRP"
+  - sku: "GOSAC-MESH-5KG"
+    title: "GoSac Reusable Produce Mesh Bag - 5kg Set"
+    category: "Kitchen & Dining"
+    size: "5kg"
+    price_inr: "REPLACE_WITH_PRICE"
+    mrp_inr: "REPLACE_WITH_MRP"

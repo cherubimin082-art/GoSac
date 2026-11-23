@@ -1,0 +1,29 @@
+# Undertow Agent config — Meta retargeting for Chirantana & GoSac (task DN-04).
+meta:
+  ad_account_id: "REPLACE_WITH_act_XXXXXXXXXX"
+  access_token_path: "REPLACE_WITH_PATH_TO_meta-access-token.json"
+
+budget:
+  monthly_ceiling_inr: 15000   # per the Sprint 1 roster's Meta pacing
+
+fatigue:
+  # Average frequency above this suggests the audience has seen the creative
+  # too many times - flagged for a human creative refresh decision, never
+  # auto-replaced (new creative needs the standard 48-hour sign-off).
+  frequency_threshold: 3.5
+
+audiences:
+  - name: "Website visitors - last 30 days"
+    source: "website_pixel"
+    lookback_days: 30
+  - name: "Video viewers - 75% completion"
+    source: "video_engagement"
+    lookback_days: 14
+
+creative:
+  video_asset_id: "REPLACE_WITH_RAYCRAFT_VIDEO_ASSET_ID"
+  cta_text: "Request a Quote"
+  headline: "REPLACE_WITH_HEADLINE"
+
+campaign:
+  name: "Chirantana - B2B Retargeting"

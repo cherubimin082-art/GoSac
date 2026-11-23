@@ -1,0 +1,55 @@
+# Mariner Agent config — the job manifest for the whole fleet.
+# Mariner does not reimplement any guardrail itself (spend ceilings, the
+# incomplete-listing guard, etc.) - those already live inside each agent
+# and fire on their own exit code. Mariner's only job is to run the right
+# agents on the right cadence, collect their exit codes, and surface
+# anything that needs a human instead of silently retrying it.
+
+jobs:
+  - name: "sonar-verify"
+    agent_dir: "../sonar"
+    command: ["python", "sonar_agent.py", "verify"]
+    schedule: "daily"
+    supports_mock: true
+
+  - name: "current-tune"
+    agent_dir: "../current"
+    command: ["python", "current_agent.py", "tune"]
+    schedule: "daily"
+    supports_mock: true
+
+  - name: "coral-route-leads"
+    agent_dir: "../coral"
+    command: ["python", "coral_agent.py", "route-leads"]
+    schedule: "frequent"
+    supports_mock: true
+
+  - name: "compass-classify"
+    agent_dir: "../compass"
+    command: ["python", "compass_agent.py", "classify"]
+    schedule: "monthly"
+    supports_mock: true
+
+  - name: "undertow-monitor"
+    agent_dir: "../undertow"
+    command: ["python", "undertow_agent.py", "monitor"]
+    schedule: "weekly"
+    supports_mock: true
+
+  - name: "harbor-check-readiness"
+    agent_dir: "../harbor"
+    command: ["python", "harbor_agent.py", "check-readiness"]
+    schedule: "weekly"
+    supports_mock: false
+
+  - name: "horizon-check-readiness"
+    agent_dir: "../horizon"
+    command: ["python", "horizon_agent.py", "check-readiness"]
+    schedule: "weekly"
+    supports_mock: false
+
+  - name: "beacon-compile"
+    agent_dir: "../beacon"
+    command: ["python", "beacon_agent.py", "compile"]
+    schedule: "weekly"
+    supports_mock: true

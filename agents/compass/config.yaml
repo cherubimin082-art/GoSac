@@ -1,0 +1,30 @@
+# Compass Agent config — SKU routing between FBA and merchant dispatch.
+# Rule of thumb from the Chirantana/GoSac playbook:
+#   - Fast-moving, light retail SKUs (1/3/5kg bag sets) -> FBA / Flipkart Advantage
+#   - Bulk/custom/heavy SKUs (net rolls, shade nets, commercial packs) -> merchant dispatch,
+#     to avoid high Amazon storage fees on slow-moving bulky stock.
+
+thresholds:
+  fba_min_monthly_velocity: 20   # below this, FBA storage fees aren't worth it
+  fba_max_weight_kg: 5           # heavier items go merchant dispatch regardless of velocity
+  stable_runs_required: 2        # a routing change only triggers an action after this many
+                                  # consecutive runs agree - avoids reacting to one noisy month
+
+skus:
+  - sku: "GOSAC-MESH-1KG"
+    weight_kg: 1
+    monthly_order_velocity: 0    # REPLACE with real sales data once available
+  - sku: "GOSAC-MESH-3KG"
+    weight_kg: 1.2
+    monthly_order_velocity: 0
+  - sku: "GOSAC-MESH-5KG"
+    weight_kg: 1.5
+    monthly_order_velocity: 0
+  - sku: "GOSAC-NET-ROLL-50M"
+    weight_kg: 22
+    monthly_order_velocity: 0
+  - sku: "GOSAC-SHADE-NET-COMMERCIAL"
+    weight_kg: 18
+    monthly_order_velocity: 0
+
+state_file: "compass_state.json"

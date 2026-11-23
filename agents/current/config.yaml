@@ -1,0 +1,43 @@
+# Current Agent config — fill these in once Google Ads access is granted (task CH-01).
+google_ads:
+  customer_id: "REPLACE_WITH_10_DIGIT_CUSTOMER_ID"   # no dashes, e.g. "1234567890"
+  credentials_path: "REPLACE_WITH_PATH_TO_google-ads.yaml"
+
+budget:
+  monthly_ceiling_inr: 35000     # hard cap — agent never pushes spend above this
+  max_bid_change_pct: 15         # max single-day bid change per keyword, as a percent
+
+target:
+  cost_per_lead_inr: 450
+
+campaign:
+  name: "Chirantana - Industrial Machinery (B2B)"
+  seed_keywords:
+    - "semi-automatic clipping machine"
+    - "fruit sorting machine manufacturer"
+    - "bale netting supplier"
+    - "industrial automatic clipping machine supplier india"
+    - "produce mesh bags wholesale"
+
+# Queries containing any of these terms are auto-flagged as non-commercial
+# and added as negative keywords. Extend this list as real search-term
+# reports reveal more noise.
+negative_signal_terms:
+  - "free"
+  - "pdf"
+  - "download"
+  - "repair manual"
+  - "diy"
+  - "student project"
+  - "tutorial"
+  - "image"
+  - "images"
+  - "salary"
+  - "job"
+  - "jobs"
+  - "price list"
+  - "second hand"
+  - "used"
+
+verification:
+  lookback_days: 1

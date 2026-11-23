@@ -1,0 +1,20 @@
+# Beacon Agent config — pulls each other agent's own output/state file and
+# compiles one weekly summary. Read-only: Beacon never writes to another
+# agent's files, only reads what they've already produced.
+#
+# NOTE on Looker Studio: there's no direct API to push arbitrary data into
+# a Looker Studio dashboard. The real integration path is to have Looker
+# Studio connect to a live source - Google Sheets, BigQuery, or a CSV in
+# Drive. Beacon's `compile` command produces exactly that: a CSV
+# (report_csv_path) you point Looker Studio's Sheets/CSV connector at.
+# GA4 and Google Ads data flow into Looker Studio via their own native
+# connectors directly - Beacon does not duplicate those.
+
+sources:
+  coral_state: "../coral/coral_state.json"
+  compass_state: "../compass/compass_state.json"
+  pearl_listings: "../pearl/pearl_listings.json"
+  horizon_catalog: "../horizon/meesho_catalog.csv"
+
+report_json_path: "beacon_report.json"
+report_csv_path: "beacon_report.csv"

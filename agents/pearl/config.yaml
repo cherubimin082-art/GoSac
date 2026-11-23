@@ -1,0 +1,46 @@
+# Pearl Agent config — sevAI-style listing generation for Amazon/Flipkart (task DN-06).
+# Same rule as Coral and Horizon: every field traces back to a real spec.
+# An unfilled "REPLACE_WITH..." spec is left out of the listing, never
+# guessed or invented.
+
+brand_name: "GoSac"
+
+amazon:
+  sp_api_credentials_path: "REPLACE_WITH_PATH_TO_sp-api-credentials.json"
+  # Amazon backend search terms: max 249 bytes, space-separated, no repeats
+  # of words already in the title.
+  backend_keyword_byte_limit: 249
+
+products:
+  - sku: "GOSAC-MESH-1KG"
+    name: "GoSac Reusable Produce Mesh Bag Set"
+    category: "Kitchen Storage"
+    specs:
+      size: "1kg capacity"
+      material: "Washable woven polyester mesh, food-grade"
+      use_case: "Grocery storage, fridge produce storage, farmers market shopping"
+      care: "Machine washable, quick-dry"
+      pack_count: "REPLACE_WITH_PACK_COUNT"
+    benefits:
+      - "Keeps fruits and vegetables fresh longer with breathable mesh"
+      - "Reusable alternative to single-use plastic produce bags"
+      - "Lightweight and foldable for easy storage and travel"
+      - "REPLACE_WITH_BENEFIT"
+      - "REPLACE_WITH_BENEFIT"
+  - sku: "GOSAC-MESH-3KG"
+    name: "GoSac Reusable Produce Mesh Bag Set"
+    category: "Kitchen Storage"
+    specs:
+      size: "3kg capacity"
+      material: "Washable woven polyester mesh, food-grade"
+      use_case: "Grocery storage, fridge produce storage, farmers market shopping"
+      care: "Machine washable, quick-dry"
+      pack_count: "REPLACE_WITH_PACK_COUNT"
+    benefits:
+      - "Keeps fruits and vegetables fresh longer with breathable mesh"
+      - "Reusable alternative to single-use plastic produce bags"
+      - "Lightweight and foldable for easy storage and travel"
+      - "REPLACE_WITH_BENEFIT"
+      - "REPLACE_WITH_BENEFIT"
+
+output_path: "pearl_listings.json"

@@ -1,0 +1,31 @@
+# Coral Agent config — fill these in once IndiaMART access is granted (task CH-01).
+indiamart:
+  crm_api_key: "REPLACE_WITH_GLUSR_CRM_API_KEY"   # from IndiaMART seller panel > CRM Integration
+  leads_endpoint: "https://mapi.indiamart.com/wservce/crm/crmListing/v2/"
+  poll_lookback_minutes: 60   # how far back to check for new leads each run
+
+# Sales reps leads get round-robin routed to. Extend/edit freely.
+sales_reps:
+  - name: "Rep 1"
+    phone: "REPLACE_WITH_PHONE"
+  - name: "Rep 2"
+    phone: "REPLACE_WITH_PHONE"
+
+# Products whose IndiaMART listings get rewritten. Fill in real specs —
+# the agent will not invent details it isn't given.
+products:
+  - name: "Semi-Automatic Industrial Clipping Machine"
+    category: "clipping machine"
+    specs:
+      material: "Mild steel body, stainless steel clipping head"
+      capacity: "REPLACE_WITH_UNITS_PER_HOUR"
+      power: "REPLACE_WITH_POWER_RATING"
+      use_case: "Food packaging, produce bagging"
+  - name: "Reusable Produce Mesh Bag Set"
+    category: "mesh bag"
+    specs:
+      sizes: "1kg, 3kg, 5kg"
+      material: "Woven polyester mesh, food-grade"
+      use_case: "Grocery storage, produce packaging"
+
+state_file: "coral_state.json"   # tracks already-routed lead IDs, avoids double routing

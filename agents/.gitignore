@@ -1,0 +1,17 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Per-agent generated state/output - never commit these, they're runtime
+# artifacts, not source
+coral/coral_state.json
+compass/compass_state.json
+pearl/pearl_listings.json
+horizon/meesho_catalog.csv
+beacon/beacon_report.json
+beacon/beacon_report.csv
+
+# Real credentials - never commit these
+**/google-ads.yaml
+**/*credentials*.json
+**/*service-account*.json

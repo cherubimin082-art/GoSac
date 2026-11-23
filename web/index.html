@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GoSac Agent Fleet</title>
+<style>
+/* layout: a header band, then a responsive grid of agent cards, one per row on phone */
+:root{
+  --bg:#f4f8f9; --surface:#ffffff; --fg:#0e2430; --muted:#5b7684;
+  --accent:#0f7a8c; --accent-fg:#ffffff; --border:#d7e4e7;
+  --good:#1a8a5e; --good-bg:#e4f5ed; --pending:#b9790a; --pending-bg:#faf0dd;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a1a20; --surface:#102833; --fg:#e7f1f3; --muted:#8fa9b2;
+    --accent:#3ec2d6; --accent-fg:#06191e; --border:#1d3b45;
+    --good:#55d6a0; --good-bg:#103527; --pending:#e8b25a; --pending-bg:#3a2c0f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a1a20; --surface:#102833; --fg:#e7f1f3; --muted:#8fa9b2;
+  --accent:#3ec2d6; --accent-fg:#06191e; --border:#1d3b45;
+  --good:#55d6a0; --good-bg:#103527; --pending:#e8b25a; --pending-bg:#3a2c0f;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif; text-wrap:balance}
+
+.wrap{max-width:1040px; margin:0 auto; padding-block:32px 64px}
+
+header.top{
+  display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between;
+  gap:12px; margin-bottom:8px;
+}
+.brand{display:flex; align-items:center; gap:10px}
+.brand .mark{
+  width:34px; height:34px; border-radius:9px; background:var(--accent);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.brand .mark svg{width:18px; height:18px}
+h1{font-size:1.5rem; margin:0; letter-spacing:-0.01em}
+.sub{color:var(--muted); margin:4px 0 0; font-size:0.95rem}
+
+.legend{display:flex; gap:14px; font-size:0.82rem; color:var(--muted); flex-wrap:wrap}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.dot{width:8px; height:8px; border-radius:50%; display:inline-block}
+.dot.good{background:var(--good)}
+.dot.pending{background:var(--pending)}
+
+.grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+  gap:16px; margin-top:28px;
+}
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:18px; display:flex; flex-direction:column; gap:12px; min-width:0;
+}
+.card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.agent-name{font-family:'Space Grotesk',sans-serif; font-size:1.15rem; margin:0}
+.agent-role{color:var(--muted); font-size:0.85rem; line-height:1.4; margin:4px 0 0}
+
+.pill{
+  font-size:0.72rem; font-weight:600; padding:4px 9px; border-radius:999px;
+  white-space:nowrap; display:inline-flex; align-items:center; gap:5px;
+}
+.pill.good{background:var(--good-bg); color:var(--good)}
+.pill.pending{background:var(--pending-bg); color:var(--pending)}
+
+.platforms{display:flex; flex-direction:column; gap:8px}
+.platform-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:8px 10px; border:1px solid var(--border); border-radius:9px; min-width:0;
+}
+.platform-name{font-size:0.85rem; font-weight:500; min-width:0; overflow-wrap:anywhere}
+.platform-actions{display:flex; gap:6px; flex-shrink:0}
+
+button{
+  font:inherit; cursor:pointer; border-radius:7px; padding:6px 11px;
+  font-size:0.78rem; font-weight:600; border:1px solid var(--border);
+  background:transparent; color:var(--fg);
+}
+button.connect{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+button.connect:hover{filter:brightness(1.08)}
+button.toggle:hover{border-color:var(--accent)}
+
+.note{color:var(--muted); font-size:0.78rem; margin-top:2px}
+.internal{
+  padding:10px; border:1px dashed var(--border); border-radius:9px;
+  color:var(--muted); font-size:0.82rem; text-align:center;
+}
+
+footer{margin-top:40px; color:var(--muted); font-size:0.8rem; line-height:1.6}
+footer a{color:var(--accent)}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2 18c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/><path d="M2 12c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/></svg>
+      </div>
+      <div>
+        <h1>GoSac Agent Fleet</h1>
+        <p class="sub">Chirantana &amp; GoSac &middot; automation control panel</p>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="dot good"></i>Connected</span>
+      <span><i class="dot pending"></i>Not connected</span>
+    </div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Connect opens the real platform in a new tab for you to grant access there.
+    This page can't complete OAuth itself, so once you've granted access, use
+    "Mark connected" to track status here &mdash; that status stays on this device only.
+  </footer>
+</div>
+
+<script>
+const AGENTS = [
+  { id:"sonar", name:"Sonar", role:"GA4 conversion tracking &mdash; form fills, call clicks, WhatsApp clicks.",
+    platforms:[{ name:"Google Analytics (GA4)", url:"https://analytics.google.com" }] },
+  { id:"coral", name:"Coral", role:"IndiaMART catalog rewrites and lead routing.",
+    platforms:[{ name:"IndiaMART Seller Panel", url:"https://seller.indiamart.com" }] },
+  { id:"current", name:"Current", role:"Google Ads campaign build and daily bid tuning.",
+    platforms:[{ name:"Google Ads", url:"https://ads.google.com" }] },
+  { id:"harbor", name:"Harbor", role:"Amazon Brand Storefront and Flipkart Seller Portal setup.",
+    platforms:[
+      { name:"Amazon Seller Central", url:"https://sellercentral.amazon.in" },
+      { name:"Flipkart Seller Hub", url:"https://seller.flipkart.com" }
+    ] },
+  { id:"compass", name:"Compass", role:"Routes SKUs between FBA and merchant dispatch.",
+    platforms:[{ name:"Amazon Seller Central (FBA)", url:"https://sellercentral.amazon.in/fba/inbound" }] },
+  { id:"horizon", name:"Horizon", role:"Onboards GoSac onto the Meesho marketplace.",
+    platforms:[{ name:"Meesho Supplier Panel", url:"https://supplier.meesho.com" }] },
+  { id:"pearl", name:"Pearl", role:"sevAI listing generation &mdash; titles, bullets, backend keywords.",
+    platforms:[] },
+  { id:"undertow", name:"Undertow", role:"Meta retargeting campaigns.",
+    platforms:[{ name:"Meta Business Suite", url:"https://business.facebook.com" }] },
+  { id:"beacon", name:"Beacon", role:"Pulls every agent's data into one live dashboard.",
+    platforms:[{ name:"Looker Studio", url:"https://lookerstudio.google.com" }] },
+  { id:"mariner", name:"Mariner", role:"Schedules the fleet, holds every approval gate.",
+    platforms:[] }
+];
+
+const STORE_KEY = "gosac-fleet-connections";
+
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveState(state){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch {}
+}
+
+let state = loadState();
+
+function platformKey(agentId, platformName){ return agentId + "::" + platformName; }
+
+function render(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  AGENTS.forEach(agent => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const connectedCount = agent.platforms.filter(p => state[platformKey(agent.id, p.name)]).length;
+    const total = agent.platforms.length;
+    const allConnected = total > 0 && connectedCount === total;
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+    top.innerHTML = `
+      <div>
+        <h3 class="agent-name">${agent.name}</h3>
+        <p class="agent-role">${agent.role}</p>
+      </div>
+      ${ total > 0
+          ? `<span class="pill ${allConnected ? 'good' : 'pending'}">${connectedCount}/${total} connected</span>`
+          : `<span class="pill pending">Internal</span>` }
+    `;
+    card.appendChild(top);
+
+    if (total === 0){
+      const internal = document.createElement("div");
+      internal.className = "internal";
+      internal.textContent = "No external platform — runs on top of the other agents.";
+      card.appendChild(internal);
+    } else {
+      const platforms = document.createElement("div");
+      platforms.className = "platforms";
+      agent.platforms.forEach(p => {
+        const key = platformKey(agent.id, p.name);
+        const connected = !!state[key];
+        const row = document.createElement("div");
+        row.className = "platform-row";
+        row.innerHTML = `
+          <span class="platform-name">${p.name}</span>
+          <span class="platform-actions">
+            <button class="connect" data-url="${p.url}">Connect</button>
+            <button class="toggle" data-key="${key}">${connected ? "Connected ✓" : "Mark connected"}</button>
+          </span>
+        `;
+        platforms.appendChild(row);
+      });
+      card.appendChild(platforms);
+    }
+
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll("button.connect").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const a = document.createElement("a");
+      a.href = btn.dataset.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+  });
+
+  grid.querySelectorAll("button.toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.key;
+      state[key] = !state[key];
+      saveState(state);
+      render();
+    });
+  });
+}
+
+render();
+</script>
+</body>
+</html>

@@ -203,8 +203,11 @@ footer a{color:var(--accent)}
 
   <footer>
     This console shows build and connection status only &mdash; it has no backend, so it can't run an agent's code itself.
-    Connect opens the real platform in a new tab for you to grant access there; this page can't complete OAuth itself,
-    so once you've granted access, use "Mark connected" to track status here (that status stays on this device only).
+    Most platforms show "Auto-detected" status: Mariner's <code>connection_status.py</code> checks each agent's
+    config.yaml for real (non-placeholder) credentials and this page reads that file &mdash; no manual click needed,
+    and no live API call happens just from loading this page. Re-run that script after filling in real credentials
+    to refresh it. A platform without that signal (like Beacon's Looker Studio connector, set up manually in its own UI)
+    still uses the "Mark connected" toggle, which stays on this device only.
     Scheduling and execution are handled by Mariner, run from a terminal or a scheduled job &mdash; see its
     <a href="https://github.com/cherubimin082-art/GoSac/tree/main/agents/mariner" target="_blank" rel="noopener">README</a> for how.
   </footer>
@@ -269,9 +272,24 @@ function saveState(state){
 }
 
 let state = loadState();
+let autoStatus = {};
+let autoStatusAt = null;
+
+async function loadAutoStatus(){
+  try {
+    const res = await fetch("connection_status.json", { cache: "no-store" });
+    if (res.ok){
+      const data = await res.json();
+      autoStatus = data.status || {};
+      autoStatusAt = data.generated_at || null;
+    }
+  } catch { /* no status file reachable — every platform falls back to manual */ }
+}
 
 function platformKey(agentId, platformName){ return agentId + "::" + platformName; }
 function agentById(id){ return AGENTS.find(a => a.id === id); }
+function isAutoTracked(key){ return Object.prototype.hasOwnProperty.call(autoStatus, key); }
+function isConnected(key){ return isAutoTracked(key) ? !!autoStatus[key] : !!state[key]; }
 
 function renderSchedule(){
   const el = document.getElementById("schedule");
@@ -290,7 +308,7 @@ function renderCard(agent){
   const card = document.createElement("div");
   card.className = "card";
 
-  const connectedCount = agent.platforms.filter(p => state[platformKey(agent.id, p.name)]).length;
+  const connectedCount = agent.platforms.filter(p => isConnected(platformKey(agent.id, p.name))).length;
   const total = agent.platforms.length;
   const allConnected = total > 0 && connectedCount === total;
 
@@ -328,14 +346,18 @@ function renderCard(agent){
     platforms.className = "platforms";
     agent.platforms.forEach(p => {
       const key = platformKey(agent.id, p.name);
-      const connected = !!state[key];
+      const connected = isConnected(key);
+      const auto = isAutoTracked(key);
       const row = document.createElement("div");
       row.className = "platform-row";
+      const statusHtml = auto
+        ? `<span class="pill ${connected ? 'good' : 'pending'}" title="Detected from real credentials in this agent's config.yaml">${connected ? "Auto-detected ✓" : "Not detected yet"}</span>`
+        : `<button class="toggle" data-key="${key}">${connected ? "Connected ✓" : "Mark connected"}</button>`;
       row.innerHTML = `
         <span class="platform-name">${p.name}</span>
         <span class="platform-actions">
           <a class="connect" href="${p.url}" target="_blank" rel="noopener">Connect</a>
-          <button class="toggle" data-key="${key}">${connected ? "Connected ✓" : "Mark connected"}</button>
+          ${statusHtml}
         </span>
       `;
       platforms.appendChild(row);
@@ -372,7 +394,7 @@ function renderKpis(){
   const builtCount = AGENTS.filter(a => a.built).length;
   const totalPlatforms = AGENTS.reduce((n, a) => n + a.platforms.length, 0);
   const connectedCount = AGENTS.reduce(
-    (n, a) => n + a.platforms.filter(p => state[platformKey(a.id, p.name)]).length, 0
+    (n, a) => n + a.platforms.filter(p => isConnected(platformKey(a.id, p.name))).length, 0
   );
   document.getElementById("kpi-built").textContent = `${builtCount}/${AGENTS.length}`;
   document.getElementById("kpi-connected").textContent = `${connectedCount}/${totalPlatforms}`;
@@ -422,6 +444,7 @@ function initTheme(){
 
 initTheme();
 render();
+loadAutoStatus().then(render);
 </script>
 </body>
 </html>

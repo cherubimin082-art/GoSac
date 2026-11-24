@@ -1,2 +1,3 @@
 .vercel
 server.log
+connection_status.json

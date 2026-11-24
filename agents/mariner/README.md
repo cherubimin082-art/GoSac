@@ -67,3 +67,39 @@ python mariner_agent.py run daily --mock
   jobs yet - right now you have to read its console output or exit code.
   Wiring a real alert is the natural next step once you're running this
   unattended.
+
+## Automatic connection status (`connection_status.py`)
+Checks every agent's `config.yaml` for real (non-placeholder) credentials
+and writes `connection_status.json` - the file the GoSac Mission Control
+dashboard reads to show "Connected" automatically, instead of relying on
+someone to click "Mark connected."
+
+```bash
+python connection_status.py
+```
+
+**What "connected" means here, precisely:** a real credential has been
+filled in where the config previously said `REPLACE_WITH...`, and (where
+one is required) the referenced credentials file actually exists on disk.
+This is **not** a live API call - no agent pings Google, Meta, or Amazon
+just because the dashboard loaded. So a green "Connected" means
+"configured with what looks like real credentials," not "we just verified
+the connection is live." Run the agent's own `verify`/`check-readiness`
+command for that stronger guarantee.
+
+Confirmed by test: with nothing filled in, all 8 checked platforms report
+`false`. Temporarily faking a real-looking IndiaMART API key flipped
+`coral::IndiaMART Seller Panel` to `true`, and reverting the config
+flipped it back - proving the detection logic actually reads the live
+config, not a cached assumption.
+
+**Beacon's Looker Studio connector isn't included.** It's set up manually
+inside Looker Studio's own UI, so nothing on disk here can confirm it -
+the dashboard falls back to the manual "Mark connected" toggle for that
+one entry only.
+
+Output goes to both `mariner/connection_status.json` and
+`web/connection_status.json` (the second is what the locally-served
+dashboard actually fetches). Re-run this any time credentials change, or
+wire it into a routine - it's cheap and safe to run often since it never
+touches the network.

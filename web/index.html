@@ -131,13 +131,14 @@ a{color:var(--accent)}
 .platform-name{font-size:0.82rem; font-weight:500; min-width:0; overflow-wrap:anywhere}
 .platform-actions{display:flex; gap:6px; flex-shrink:0}
 
-button{
+button, a.connect{
   font:inherit; cursor:pointer; border-radius:7px; padding:5px 10px;
   font-size:0.76rem; font-weight:600; border:1px solid var(--border);
   background:transparent; color:var(--fg);
+  text-decoration:none; display:inline-flex; align-items:center;
 }
-button.connect{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
-button.connect:hover{filter:brightness(1.08)}
+a.connect{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+a.connect:hover{filter:brightness(1.08)}
 button.toggle:hover{border-color:var(--accent)}
 
 .internal{
@@ -333,7 +334,7 @@ function renderCard(agent){
       row.innerHTML = `
         <span class="platform-name">${p.name}</span>
         <span class="platform-actions">
-          <button class="connect" data-url="${p.url}">Connect</button>
+          <a class="connect" href="${p.url}" target="_blank" rel="noopener">Connect</a>
           <button class="toggle" data-key="${key}">${connected ? "Connected ✓" : "Mark connected"}</button>
         </span>
       `;
@@ -378,17 +379,6 @@ function renderKpis(){
 }
 
 function wireButtons(){
-  document.querySelectorAll("button.connect").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const a = document.createElement("a");
-      a.href = btn.dataset.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    });
-  });
 
   document.querySelectorAll("button.toggle").forEach(btn => {
     btn.addEventListener("click", () => {

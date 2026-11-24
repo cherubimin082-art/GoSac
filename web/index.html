@@ -5,156 +5,182 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GoSac Mission Control</title>
 <style>
-/* layout: a slate command-deck console — KPI strip, schedule rail, then
-   pillar-grouped agent cards. Teal is the one accent; status is encoded
-   separately (good/pending) so it never competes with the accent. */
+/* layout: a two-column admin shell — a fixed dark sidebar (brand, client
+   switcher, section nav) beside a light content column (KPIs, schedule,
+   agent roster). Sidebar stays dark in both themes, deliberately, so it
+   reads as a constant "control deck" the content column sits beside.
+   Collapses to a stacked single column under 880px. */
 :root{
-  --bg:#f3f6f7; --surface:#ffffff; --surface-2:#eef3f4; --fg:#101c24; --muted:#56707a;
-  --accent:#0f7a8c; --accent-fg:#ffffff; --border:#d7e2e4;
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#eef0f3; --fg:#13171f; --muted:#5b6472;
+  --accent:#0f7a8c; --accent-fg:#ffffff; --border:#e0e3e8;
   --good:#187a52; --good-bg:#e1f3ea; --pending:#9a6a0a; --pending-bg:#f8edd9;
-  --rail-bg:#0f2430; --rail-fg:#eaf3f5; --rail-muted:#9fb8bf; --rail-border:#223c47;
+  --side-bg:#0b1117; --side-fg:#eef1f5; --side-muted:#8b94a3; --side-border:#1d232d;
+  --side-active-bg:#121a24;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#070f14; --surface:#101e26; --surface-2:#0c1920; --fg:#e7f1f3; --muted:#87a3ab;
-    --accent:#3ec2d6; --accent-fg:#06191e; --border:#1c333c;
+    --bg:#0a0d12; --surface:#12161d; --surface-2:#0d1117; --fg:#e8eaed; --muted:#8891a0;
+    --accent:#3ec2d6; --accent-fg:#06191e; --border:#232933;
     --good:#53d19c; --good-bg:#0f2e23; --pending:#e3ad5a; --pending-bg:#332508;
-    --rail-bg:#040d12; --rail-fg:#e7f1f3; --rail-muted:#7d99a1; --rail-border:#152832;
+    --side-bg:#05070a; --side-fg:#e8eaed; --side-muted:#707a89; --side-border:#161b22;
+    --side-active-bg:#0d141d;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#070f14; --surface:#101e26; --surface-2:#0c1920; --fg:#e7f1f3; --muted:#87a3ab;
-  --accent:#3ec2d6; --accent-fg:#06191e; --border:#1c333c;
+  --bg:#0a0d12; --surface:#12161d; --surface-2:#0d1117; --fg:#e8eaed; --muted:#8891a0;
+  --accent:#3ec2d6; --accent-fg:#06191e; --border:#232933;
   --good:#53d19c; --good-bg:#0f2e23; --pending:#e3ad5a; --pending-bg:#332508;
-  --rail-bg:#040d12; --rail-fg:#e7f1f3; --rail-muted:#7d99a1; --rail-border:#152832;
+  --side-bg:#05070a; --side-fg:#e8eaed; --side-muted:#707a89; --side-border:#161b22;
+  --side-active-bg:#0d141d;
   color-scheme: dark;
 }
 
 *{box-sizing:border-box}
+html,body{height:100%}
 body{
-  background:var(--bg); color:var(--fg);
+  background:var(--bg); color:var(--fg); margin:0;
   font-family:'Inter',system-ui,-apple-system,sans-serif;
-  padding-left:max(16px, env(safe-area-inset-left,0px));
-  padding-right:max(16px, env(safe-area-inset-right,0px));
 }
 h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif; text-wrap:balance; margin:0}
 a{color:var(--accent)}
 
-.wrap{max-width:1100px; margin:0 auto; padding-block:28px 64px}
+.shell{display:flex; align-items:flex-start; min-height:100%}
 
-/* ---- rail (dark command-deck band, same in both themes) ---- */
-.rail{
-  background:var(--rail-bg); color:var(--rail-fg); border-radius:16px;
-  padding:22px 24px; margin-top: env(safe-area-inset-top,0px);
+/* ---------------- Sidebar ---------------- */
+.sidebar{
+  width:264px; flex-shrink:0; background:var(--side-bg); color:var(--side-fg);
+  min-height:100vh; display:flex; flex-direction:column;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  position:sticky; top:0;
 }
-.rail-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:16px}
-.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.brand{display:flex; align-items:center; gap:10px; padding:4px 6px 18px}
 .brand .mark{
-  width:38px; height:38px; border-radius:10px; background:var(--accent);
+  width:32px; height:32px; border-radius:9px; background:var(--accent);
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
-.brand .mark svg{width:20px; height:20px}
-.rail h1{font-size:1.4rem; color:var(--rail-fg)}
-.rail .sub{color:var(--rail-muted); margin:3px 0 0; font-size:0.88rem}
+.brand .mark svg{width:17px; height:17px}
+.brand .title{font-family:'Space Grotesk',sans-serif; font-size:0.98rem; font-weight:600; line-height:1.2}
+.brand .subtitle{color:var(--side-muted); font-size:0.72rem; margin-top:1px}
 
+.side-label{
+  color:var(--side-muted); font-size:0.68rem; font-weight:700; letter-spacing:0.06em;
+  text-transform:uppercase; padding:14px 10px 6px;
+}
+
+.client-list{display:flex; flex-direction:column; gap:2px}
+.client-item{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  font:inherit; font-size:0.85rem; font-weight:500; color:var(--side-muted);
+  background:transparent; border:none; border-radius:8px; padding:8px 10px; cursor:pointer;
+}
+.client-item .dot{width:7px; height:7px; border-radius:50%; background:var(--side-muted); flex-shrink:0}
+.client-item.active{background:var(--side-active-bg); color:var(--side-fg)}
+.client-item.active .dot{background:var(--accent)}
+.client-item:hover:not(.active){color:var(--side-fg)}
+
+.add-client-btn{
+  font:inherit; font-size:0.83rem; font-weight:600; cursor:pointer; text-align:left;
+  border:1px dashed var(--side-border); background:transparent; color:var(--side-muted);
+  border-radius:8px; padding:8px 10px; margin-top:4px;
+}
+.add-client-btn:hover{border-color:var(--accent); color:var(--side-fg)}
+
+.add-client-form{display:flex; flex-direction:column; gap:6px; padding:4px 2px 0}
+.add-client-form input{
+  font:inherit; font-size:0.83rem; padding:7px 10px; border-radius:7px;
+  border:1px solid var(--side-border); background:rgba(255,255,255,0.04); color:var(--side-fg);
+}
+.add-client-form input::placeholder{color:var(--side-muted)}
+.add-client-form .form-row{display:flex; gap:6px}
+.add-client-form button{
+  font:inherit; font-size:0.8rem; font-weight:600; cursor:pointer; border-radius:7px;
+  padding:6px 12px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-fg); flex:1;
+}
+.add-client-form .cancel{background:transparent; border-color:var(--side-border); color:var(--side-muted)}
+.clients-note{color:var(--side-muted); font-size:0.73rem; line-height:1.5; padding:4px 10px}
+
+.section-nav{display:flex; flex-direction:column; gap:1px; margin-top:6px}
+.section-nav a{
+  font-size:0.84rem; font-weight:500; color:var(--side-muted); text-decoration:none;
+  padding:7px 10px; border-radius:8px;
+}
+.section-nav a:hover{color:var(--side-fg); background:var(--side-active-bg)}
+
+.sidebar-foot{margin-top:auto; padding-top:14px; border-top:1px solid var(--side-border)}
 .theme-toggle{
-  font:inherit; font-size:0.76rem; font-weight:600; cursor:pointer;
-  border:1px solid var(--rail-border); background:transparent; color:var(--rail-fg);
-  border-radius:999px; padding:6px 13px; flex-shrink:0;
+  font:inherit; font-size:0.78rem; font-weight:600; cursor:pointer; width:100%;
+  border:1px solid var(--side-border); background:transparent; color:var(--side-fg);
+  border-radius:8px; padding:8px 10px;
 }
 .theme-toggle:hover{border-color:var(--accent)}
 
-.clients-bar{
-  display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:18px;
-  padding-top:16px; border-top:1px solid var(--rail-border);
+/* ---------------- Main column ---------------- */
+.main{
+  flex:1; min-width:0; padding:26px max(24px, env(safe-area-inset-right,0px)) 64px 24px;
+  padding-top:calc(26px + env(safe-area-inset-top,0px));
+  max-width:1180px;
 }
-.client-chip{
-  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer;
-  border:1px solid var(--rail-border); background:transparent; color:var(--rail-muted);
-  border-radius:999px; padding:6px 14px;
-}
-.client-chip.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
-.client-chip:hover:not(.active){border-color:var(--accent); color:var(--rail-fg)}
 
-.add-client-btn{
-  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer;
-  border:1px dashed var(--rail-border); background:transparent; color:var(--rail-muted);
-  border-radius:999px; padding:6px 14px;
+.topbar{
+  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end;
+  gap:14px; margin-bottom:22px;
 }
-.add-client-btn:hover{border-color:var(--accent); color:var(--rail-fg)}
+.eyebrow{color:var(--muted); font-size:0.76rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase}
+.topbar h1{font-size:1.5rem; margin-top:4px}
+.topbar .btn{
+  font-size:0.82rem; font-weight:600; text-decoration:none; color:var(--accent-fg);
+  background:var(--accent); padding:9px 16px; border-radius:8px; white-space:nowrap;
+}
 
-.add-client-form{
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-}
-.add-client-form input{
-  font:inherit; font-size:0.82rem; padding:6px 12px; border-radius:999px;
-  border:1px solid var(--rail-border); background:rgba(255,255,255,0.04); color:var(--rail-fg);
-  min-width:180px;
-}
-.add-client-form input::placeholder{color:var(--rail-muted)}
-.add-client-form button{
-  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer; border-radius:999px;
-  padding:6px 14px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-fg);
-}
-.add-client-form .cancel{background:transparent; border-color:var(--rail-border); color:var(--rail-muted)}
-.clients-note{color:var(--rail-muted); font-size:0.78rem; width:100%; margin-top:4px}
-
-.kpis{display:flex; flex-wrap:wrap; gap:12px; margin-top:20px}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px}
 .kpi{
-  background:rgba(255,255,255,0.04); border:1px solid var(--rail-border); border-radius:11px;
-  padding:12px 16px; min-width:140px; flex:1;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px;
 }
-.kpi .n{font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-variant-numeric:tabular-nums}
-.kpi .l{color:var(--rail-muted); font-size:0.76rem; margin-top:2px}
+.kpi .n{font-family:'Space Grotesk',sans-serif; font-size:1.6rem; font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--muted); font-size:0.78rem; margin-top:2px}
 
-/* ---- schedule rail ---- */
-.schedule{
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr));
-  gap:10px; margin-top:18px;
-}
-.sched-card{
-  background:rgba(255,255,255,0.03); border:1px solid var(--rail-border); border-radius:11px;
-  padding:12px 14px;
-}
+section.block{margin-top:30px}
+.block-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:13px}
+.block-head h2{font-size:1.05rem}
+.block-head .hint{color:var(--muted); font-size:0.8rem}
+
+/* ---- schedule ---- */
+.schedule{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:10px}
+.sched-card{background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:12px 14px}
 .sched-card .tag{
-  font-size:0.68rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
-  color:var(--accent);
+  font-size:0.68rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent);
 }
-.sched-card .names{color:var(--rail-fg); font-size:0.84rem; margin-top:5px; line-height:1.5}
+.sched-card .names{color:var(--fg); font-size:0.84rem; margin-top:5px; line-height:1.5}
 
-/* ---- pillars ---- */
-.pillar{margin-top:34px}
-.pillar-head{display:flex; align-items:baseline; gap:10px; margin-bottom:14px}
-.pillar-head h2{font-size:1.1rem}
-.pillar-head .count{color:var(--muted); font-size:0.82rem}
+/* ---- pillars / agent cards ---- */
+.pillar{margin-top:24px}
+.pillar:first-child{margin-top:0}
+.pillar-head{display:flex; align-items:baseline; gap:10px; margin-bottom:12px}
+.pillar-head h3{font-size:0.95rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em}
+.pillar-head .count{color:var(--muted); font-size:0.78rem}
 
-.grid{
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr));
-  gap:14px;
-}
+.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:14px}
 
 .card{
-  background:var(--surface); border:1px solid var(--border); border-radius:14px;
-  padding:17px; display:flex; flex-direction:column; gap:11px; min-width:0;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px; display:flex; flex-direction:column; gap:11px; min-width:0;
 }
 .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
-.agent-name{font-family:'Space Grotesk',sans-serif; font-size:1.1rem}
-.agent-role{color:var(--muted); font-size:0.83rem; line-height:1.4; margin:4px 0 0}
+.agent-name{font-family:'Space Grotesk',sans-serif; font-size:1.05rem}
+.agent-role{color:var(--muted); font-size:0.82rem; line-height:1.4; margin:4px 0 0}
 
 .pill{
-  font-size:0.7rem; font-weight:600; padding:3px 9px; border-radius:999px;
+  font-size:0.68rem; font-weight:600; padding:3px 8px; border-radius:999px;
   white-space:nowrap; display:inline-flex; align-items:center; gap:5px;
 }
 .pill.good{background:var(--good-bg); color:var(--good)}
 .pill.pending{background:var(--pending-bg); color:var(--pending)}
 .pill-stack{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0}
 
-.code-link{
-  font-size:0.77rem; color:var(--accent); text-decoration:none; font-weight:600;
-  align-self:flex-start;
-}
+.code-link{font-size:0.76rem; color:var(--accent); text-decoration:none; font-weight:600; align-self:flex-start}
 .code-link:hover{text-decoration:underline}
 
 .platforms{display:flex; flex-direction:column; gap:7px}
@@ -163,12 +189,12 @@ a{color:var(--accent)}
   padding:7px 9px; border:1px solid var(--border); border-radius:9px; min-width:0;
   background:var(--surface-2);
 }
-.platform-name{font-size:0.82rem; font-weight:500; min-width:0; overflow-wrap:anywhere}
+.platform-name{font-size:0.8rem; font-weight:500; min-width:0; overflow-wrap:anywhere}
 .platform-actions{display:flex; gap:6px; flex-shrink:0}
 
 button, a.connect{
   font:inherit; cursor:pointer; border-radius:7px; padding:5px 10px;
-  font-size:0.76rem; font-weight:600; border:1px solid var(--border);
+  font-size:0.75rem; font-weight:600; border:1px solid var(--border);
   background:transparent; color:var(--fg);
   text-decoration:none; display:inline-flex; align-items:center;
 }
@@ -176,12 +202,7 @@ a.connect{background:var(--accent); color:var(--accent-fg); border-color:var(--a
 a.connect:hover{filter:brightness(1.08)}
 button.toggle:hover{border-color:var(--accent)}
 
-.internal{
-  padding:9px; border:1px dashed var(--border); border-radius:9px;
-  color:var(--muted); font-size:0.8rem; text-align:center;
-}
-
-.run-note{
+.internal, .run-note{
   padding:9px; border:1px dashed var(--border); border-radius:9px;
   color:var(--muted); font-size:0.78rem; text-align:center;
 }
@@ -189,59 +210,81 @@ button.toggle:hover{border-color:var(--accent)}
 .run-box{border-top:1px solid var(--border); padding-top:11px; margin-top:2px}
 .run-controls{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
 .run-command{
-  font:inherit; font-size:0.78rem; padding:5px 8px; border-radius:7px;
+  font:inherit; font-size:0.76rem; padding:5px 8px; border-radius:7px;
   border:1px solid var(--border); background:var(--surface-2); color:var(--fg);
 }
-.run-mock{font-size:0.76rem; color:var(--muted); display:flex; align-items:center; gap:4px}
+.run-mock{font-size:0.75rem; color:var(--muted); display:flex; align-items:center; gap:4px}
 .run-btn{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
 .run-btn:hover{filter:brightness(1.08)}
 .run-btn:disabled{opacity:0.6; cursor:default}
 
 .run-output{
   margin-top:9px; padding:9px 10px; border-radius:8px; max-height:220px; overflow:auto;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.74rem;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.73rem;
   white-space:pre-wrap; word-break:break-word;
   background:var(--surface-2); border:1px solid var(--border); color:var(--muted);
 }
 .run-output.ok{border-color:var(--good); color:var(--fg)}
 .run-output.error{border-color:var(--pending); color:var(--fg)}
 
-/* ---- results callout ---- */
-.results{
-  margin-top:34px; background:var(--surface); border:1px solid var(--border);
-  border-radius:14px; padding:20px 22px; display:flex; flex-wrap:wrap;
-  align-items:center; justify-content:space-between; gap:14px;
-}
-.results h2{font-size:1.05rem}
-.results p{color:var(--muted); font-size:0.85rem; margin:4px 0 0; max-width:60ch}
-.results a.btn{
-  font-size:0.82rem; font-weight:600; text-decoration:none; color:var(--accent-fg);
-  background:var(--accent); padding:9px 16px; border-radius:8px; white-space:nowrap;
-}
-
-footer{margin-top:40px; color:var(--muted); font-size:0.8rem; line-height:1.65}
+footer{margin-top:40px; color:var(--muted); font-size:0.78rem; line-height:1.65}
 footer a{color:var(--accent)}
+
+/* ---- responsive: stack under 880px ---- */
+@media (max-width: 880px){
+  .shell{flex-direction:column}
+  .sidebar{
+    width:100%; min-height:auto; position:static; flex-direction:row; flex-wrap:wrap;
+    align-items:center; gap:10px; padding:14px max(16px, env(safe-area-inset-left,0px));
+  }
+  .brand{padding:0; flex:1 1 auto}
+  .client-list, .section-nav{flex-direction:row; flex-wrap:wrap}
+  .side-label{padding:0 6px; width:100%}
+  .sidebar-foot{margin-top:0; padding-top:0; border-top:none; width:auto}
+  .theme-toggle{width:auto}
+  .main{padding:20px max(16px, env(safe-area-inset-right,0px)) 48px max(16px, env(safe-area-inset-left,0px))}
+}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 </head>
 <body>
 
-<div class="wrap">
-  <div class="rail">
-    <div class="rail-top">
-      <div class="brand">
-        <div class="mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2 18c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/><path d="M2 12c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/></svg>
-        </div>
-        <div>
-          <h1>GoSac Mission Control</h1>
-          <p class="sub" id="client-sub">Chirantana &amp; GoSac &middot; automation fleet console</p>
-        </div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2 18c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/><path d="M2 12c2 2 4 2 6 0s4-2 6 0s4 2 6 0"/></svg>
       </div>
-      <button class="theme-toggle" id="theme-toggle">Dark / Light</button>
+      <div>
+        <div class="title">Mission Control</div>
+        <div class="subtitle">GoSac automation fleet</div>
+      </div>
     </div>
 
-    <div class="clients-bar" id="clients-bar"></div>
+    <div class="side-label">Clients</div>
+    <div class="client-list" id="client-list"></div>
+    <div id="add-client-area"></div>
+
+    <div class="side-label">Jump to</div>
+    <nav class="section-nav">
+      <a href="#overview">Overview</a>
+      <a href="#schedule-section">Run schedule</a>
+      <a href="#agents">Agent roster</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="theme-toggle" id="theme-toggle">Dark / Light</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar" id="overview">
+      <div>
+        <div class="eyebrow">Client</div>
+        <h1 id="client-sub">GoSac / Chirantana</h1>
+      </div>
+      <a class="btn" href="https://claude.ai/artifact/1d2kugJCfx4Sogd2hg5R2r" target="_blank" rel="noopener">Open results dashboard &rarr;</a>
+    </div>
 
     <div class="kpis">
       <div class="kpi"><div class="n" id="kpi-built">&mdash;</div><div class="l">Agents built</div></div>
@@ -250,51 +293,41 @@ footer a{color:var(--accent)}
       <div class="kpi"><div class="n">3</div><div class="l">Pillars covered</div></div>
     </div>
 
-    <div class="schedule" id="schedule"></div>
-  </div>
+    <section class="block" id="schedule-section">
+      <div class="block-head"><h2>Run schedule</h2><span class="hint">Which agents run when, via Mariner</span></div>
+      <div class="schedule" id="schedule"></div>
+    </section>
 
-  <div id="pillars"></div>
+    <section class="block" id="agents">
+      <div class="block-head"><h2>Agent roster</h2><span class="hint">Grouped by pillar</span></div>
+      <div id="pillars"></div>
+    </section>
 
-  <div class="results">
-    <div>
-      <h2>Latest fleet results</h2>
-      <p>Weekly numbers compiled by Beacon from each agent's own output &mdash; leads routed, SKUs tracked, listings generated, catalog rows synced.</p>
-    </div>
-    <a class="btn" href="https://claude.ai/artifact/1d2kugJCfx4Sogd2hg5R2r" target="_blank" rel="noopener">Open results dashboard &rarr;</a>
-  </div>
-
-  <footer>
-    This console is a multi-client platform: each client in the bar above has their own set of agent configs and
-    connection status, kept fully separate. Use "+ Add client" to scaffold a new one &mdash; it creates real config
-    folders under <code>clients/&lt;id&gt;/</code> for every agent, ready to fill in with that client's credentials.
-    <br><br>
-    This console shows build and connection status only &mdash; it has no backend of its own for running agent code.
-    Most platforms show "Auto-detected" status: Mariner's <code>connection_status.py</code> checks each client's
-    config.yaml for real (non-placeholder) credentials and this page reads that file &mdash; no manual click needed,
-    and no live API call happens just from loading this page. Re-run that script after filling in real credentials
-    to refresh it. A platform without that signal (like Beacon's Looker Studio connector, set up manually in its own UI)
-    still uses the "Mark connected" toggle, which stays on this device only.
-    Scheduling and execution are handled by Mariner, run from a terminal or a scheduled job &mdash; see its
-    <a href="https://github.com/cherubimin082-art/GoSac/tree/main/agents/mariner" target="_blank" rel="noopener">README</a> for how.
-  </footer>
+    <footer>
+      This console is a multi-client platform: each client in the sidebar has their own set of agent configs and
+      connection status, kept fully separate. "+ Add client" works only in the local console
+      (<code>python web/server.py</code>), since adding a client scaffolds real config folders on disk and this
+      published page has no backend to do that.
+      <br><br>
+      This console shows build and connection status only &mdash; it has no backend of its own for running agent code
+      unless the local console is up. Most platforms show "Auto-detected" status: Mariner's
+      <code>connection_status.py</code> checks each client's config.yaml for real (non-placeholder) credentials, and
+      this page reads that result &mdash; no manual click needed, and no live API call happens just from loading this
+      page. A platform without that signal (like Beacon's Looker Studio connector, set up manually in its own UI)
+      still uses the "Mark connected" toggle, which stays on this device only.
+      Scheduling and execution are handled by Mariner &mdash; see its
+      <a href="https://github.com/cherubimin082-art/GoSac/tree/main/agents/mariner" target="_blank" rel="noopener">README</a> for how.
+    </footer>
+  </main>
 </div>
 
 <script>
 const REPO = "https://github.com/cherubimin082-art/GoSac/tree/main/agents";
 
 const PILLARS = [
-  {
-    name: "B2B Growth Engine",
-    agents: ["sonar", "coral", "current"]
-  },
-  {
-    name: "B2C Marketplace Operations",
-    agents: ["harbor", "compass", "horizon", "pearl"]
-  },
-  {
-    name: "Growth Ops & Coordination",
-    agents: ["undertow", "beacon", "mariner"]
-  }
+  { name: "B2B Growth Engine", agents: ["sonar", "coral", "current"] },
+  { name: "B2C Marketplace Operations", agents: ["harbor", "compass", "horizon", "pearl"] },
+  { name: "Growth Ops & Coordination", agents: ["undertow", "beacon", "mariner"] }
 ];
 
 const AGENTS = [
@@ -345,6 +378,7 @@ let clients = [{ id: "gosac", name: "GoSac / Chirantana", default: true }];
 let currentClientId = "gosac";
 let backendAvailable = false;
 let runnableAgents = {};
+let addingClient = false;
 
 async function loadAgents(){
   try {
@@ -355,7 +389,6 @@ async function loadAgents(){
     }
   } catch { /* no local backend — Run controls stay hidden */ }
 }
-let addingClient = false;
 
 async function loadAutoStatus(){
   try {
@@ -378,7 +411,6 @@ async function loadClients(){
       return;
     }
   } catch { /* no local backend — this is the read-only (e.g. published) view */ }
-  // Fall back to a co-located static snapshot, if one was published alongside this page.
   try {
     const res = await fetch("clients.json", { cache: "no-store" });
     if (res.ok){
@@ -400,42 +432,46 @@ function isConnected(key){
 }
 
 function renderClientsBar(){
-  const el = document.getElementById("clients-bar");
-  el.innerHTML = "";
+  const list = document.getElementById("client-list");
+  list.innerHTML = "";
 
   clients.forEach(c => {
-    const chip = document.createElement("button");
-    chip.className = "client-chip" + (c.id === currentClientId ? " active" : "");
-    chip.textContent = c.name;
-    chip.addEventListener("click", () => {
+    const item = document.createElement("button");
+    item.className = "client-item" + (c.id === currentClientId ? " active" : "");
+    item.innerHTML = `<span class="dot"></span><span>${c.name}</span>`;
+    item.addEventListener("click", () => {
       currentClientId = c.id;
       addingClient = false;
       render();
     });
-    el.appendChild(chip);
+    list.appendChild(item);
   });
 
   const activeClient = clients.find(c => c.id === currentClientId) || clients[0];
-  document.getElementById("client-sub").textContent =
-    `${activeClient ? activeClient.name : "GoSac"} · automation fleet console`;
+  document.getElementById("client-sub").textContent = activeClient ? activeClient.name : "GoSac";
+
+  const area = document.getElementById("add-client-area");
+  area.innerHTML = "";
 
   if (!backendAvailable){
-    const note = document.createElement("span");
+    const note = document.createElement("div");
     note.className = "clients-note";
-    note.textContent = "Adding clients needs the local console: run \"python web/server.py\" on your machine.";
-    el.appendChild(note);
+    note.textContent = "Adding clients needs the local console: run \"python web/server.py\".";
+    area.appendChild(note);
     return;
   }
 
   if (addingClient){
-    const form = document.createElement("span");
+    const form = document.createElement("div");
     form.className = "add-client-form";
     form.innerHTML = `
       <input type="text" id="new-client-name" placeholder="Client name" maxlength="80">
-      <button type="button" id="save-client">Add</button>
-      <button type="button" class="cancel" id="cancel-client">Cancel</button>
+      <div class="form-row">
+        <button type="button" id="save-client">Add</button>
+        <button type="button" class="cancel" id="cancel-client">Cancel</button>
+      </div>
     `;
-    el.appendChild(form);
+    area.appendChild(form);
     document.getElementById("new-client-name").focus();
 
     document.getElementById("save-client").addEventListener("click", async () => {
@@ -471,7 +507,7 @@ function renderClientsBar(){
     addBtn.className = "add-client-btn";
     addBtn.textContent = "+ Add client";
     addBtn.addEventListener("click", () => { addingClient = true; render(); });
-    el.appendChild(addBtn);
+    area.appendChild(addBtn);
   }
 }
 
@@ -629,7 +665,7 @@ function renderPillars(){
 
     const head = document.createElement("div");
     head.className = "pillar-head";
-    head.innerHTML = `<h2>${pillar.name}</h2><span class="count">${pillar.agents.length} agent${pillar.agents.length === 1 ? "" : "s"}</span>`;
+    head.innerHTML = `<h3>${pillar.name}</h3><span class="count">${pillar.agents.length} agent${pillar.agents.length === 1 ? "" : "s"}</span>`;
     section.appendChild(head);
 
     const grid = document.createElement("div");
@@ -652,7 +688,6 @@ function renderKpis(){
 }
 
 function wireButtons(){
-
   document.querySelectorAll("button.toggle").forEach(btn => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.key;

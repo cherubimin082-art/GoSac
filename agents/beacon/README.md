@@ -20,6 +20,23 @@ A source with no file yet is reported as **"no data yet"**, never a
 fabricated zero or a guessed number. A missing agent output means that
 agent hasn't run, not that it did zero work.
 
+## GoSac Fleet Results dashboard
+A live dashboard (an Artifact, not part of this repo) shows Beacon's
+numbers as stat tiles: "GoSac Fleet Results". It reads an uploaded copy
+of `beacon_report.csv`, not a live connector, so refreshing it is a
+two-step process:
+
+```bash
+python refresh_dashboard.py
+```
+
+This re-runs `compile` for real and prints a reminder, because the second
+step - uploading the CSV into the dashboard's store and updating its
+`datasets/fleet` record - can only be done through Claude's Artifact/
+ArtifactData tools, not from a standalone script. Once this script says
+the CSV is up to date, ask Claude (in a Claude Code session) to "sync the
+dashboard with the latest Beacon report."
+
 ## Setup
 ```bash
 pip install -r requirements.txt

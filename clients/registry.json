@@ -5,6 +5,12 @@
       "name": "GoSac / Chirantana",
       "createdAt": "2026-11-18T00:00:00+00:00",
       "default": true
+    },
+    {
+      "id": "e-commerce",
+      "name": "E-Commerce",
+      "createdAt": "2026-11-24T10:16:52.624146+00:00",
+      "default": false
     }
   ]
 }

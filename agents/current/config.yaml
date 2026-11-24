@@ -18,6 +18,19 @@ campaign:
     - "bale netting supplier"
     - "industrial automatic clipping machine supplier india"
     - "produce mesh bags wholesale"
+  # The ad itself is only created if ALL THREE of these are filled in with
+  # real values. Google Ads requires 3-15 headlines (<=30 chars each) and
+  # 2-4 descriptions (<=90 chars each) for a Responsive Search Ad - left
+  # unfilled, build skips ad creation and clearly says so, same
+  # conservative rule every other agent follows (never invent ad copy).
+  ad_headlines:
+    - "REPLACE_WITH_HEADLINE_1"
+    - "REPLACE_WITH_HEADLINE_2"
+    - "REPLACE_WITH_HEADLINE_3"
+  ad_descriptions:
+    - "REPLACE_WITH_DESCRIPTION_1"
+    - "REPLACE_WITH_DESCRIPTION_2"
+  final_url: "REPLACE_WITH_LANDING_PAGE_URL"   # e.g. https://chirantana.net/clipping-machines
 
 # Queries containing any of these terms are auto-flagged as non-commercial
 # and added as negative keywords. Extend this list as real search-term

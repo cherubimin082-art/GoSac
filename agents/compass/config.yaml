@@ -13,18 +13,18 @@ thresholds:
 skus:
   - sku: "GOSAC-MESH-1KG"
     weight_kg: 1
-    monthly_order_velocity: 0    # REPLACE with real sales data once available
+    monthly_order_velocity: 35   # EXAMPLE, not real data: strong early sales
   - sku: "GOSAC-MESH-3KG"
     weight_kg: 1.2
-    monthly_order_velocity: 0
+    monthly_order_velocity: 25   # EXAMPLE, not real data: also light + fast-moving
   - sku: "GOSAC-MESH-5KG"
     weight_kg: 1.5
-    monthly_order_velocity: 0
+    monthly_order_velocity: 8    # EXAMPLE, not real data: light but slow-moving
   - sku: "GOSAC-NET-ROLL-50M"
     weight_kg: 22
-    monthly_order_velocity: 0
+    monthly_order_velocity: 30   # EXAMPLE, not real data: high demand but too heavy for FBA
   - sku: "GOSAC-SHADE-NET-COMMERCIAL"
     weight_kg: 18
-    monthly_order_velocity: 0
+    monthly_order_velocity: 5    # EXAMPLE, not real data: heavy and slow-moving
 
 state_file: "compass_state.json"

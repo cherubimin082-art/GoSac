@@ -177,6 +177,31 @@ button.toggle:hover{border-color:var(--accent)}
   color:var(--muted); font-size:0.8rem; text-align:center;
 }
 
+.run-note{
+  padding:9px; border:1px dashed var(--border); border-radius:9px;
+  color:var(--muted); font-size:0.78rem; text-align:center;
+}
+
+.run-box{border-top:1px solid var(--border); padding-top:11px; margin-top:2px}
+.run-controls{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.run-command{
+  font:inherit; font-size:0.78rem; padding:5px 8px; border-radius:7px;
+  border:1px solid var(--border); background:var(--surface-2); color:var(--fg);
+}
+.run-mock{font-size:0.76rem; color:var(--muted); display:flex; align-items:center; gap:4px}
+.run-btn{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.run-btn:hover{filter:brightness(1.08)}
+.run-btn:disabled{opacity:0.6; cursor:default}
+
+.run-output{
+  margin-top:9px; padding:9px 10px; border-radius:8px; max-height:220px; overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.74rem;
+  white-space:pre-wrap; word-break:break-word;
+  background:var(--surface-2); border:1px solid var(--border); color:var(--muted);
+}
+.run-output.ok{border-color:var(--good); color:var(--fg)}
+.run-output.error{border-color:var(--pending); color:var(--fg)}
+
 /* ---- results callout ---- */
 .results{
   margin-top:34px; background:var(--surface); border:1px solid var(--border);
@@ -313,6 +338,17 @@ let autoStatusAt = null;
 let clients = [{ id: "gosac", name: "GoSac / Chirantana", default: true }];
 let currentClientId = "gosac";
 let backendAvailable = false;
+let runnableAgents = {};
+
+async function loadAgents(){
+  try {
+    const res = await fetch("/api/agents", { cache: "no-store" });
+    if (res.ok){
+      const data = await res.json();
+      runnableAgents = data.agents || {};
+    }
+  } catch { /* no local backend — Run controls stay hidden */ }
+}
 let addingClient = false;
 
 async function loadAutoStatus(){
@@ -507,6 +543,73 @@ function renderCard(agent){
     card.appendChild(platforms);
   }
 
+  const runSpec = runnableAgents[agent.id];
+  if (runSpec){
+    if (!backendAvailable){
+      const note = document.createElement("div");
+      note.className = "run-note";
+      note.textContent = "Running agents needs the local console: run \"python web/server.py\".";
+      card.appendChild(note);
+    } else {
+      const runBox = document.createElement("div");
+      runBox.className = "run-box";
+      const options = runSpec.commands.map(c => `<option value="${c}">${c}</option>`).join("");
+      runBox.innerHTML = `
+        <div class="run-controls">
+          <select class="run-command">${options}</select>
+          <label class="run-mock"><input type="checkbox" checked> mock</label>
+          <button type="button" class="run-btn">Run</button>
+        </div>
+        <pre class="run-output" hidden></pre>
+      `;
+      card.appendChild(runBox);
+
+      const select = runBox.querySelector(".run-command");
+      const mockBox = runBox.querySelector(".run-mock input");
+      const runBtn = runBox.querySelector(".run-btn");
+      const output = runBox.querySelector(".run-output");
+
+      runBtn.addEventListener("click", async () => {
+        runBtn.disabled = true;
+        runBtn.textContent = "Running…";
+        output.hidden = false;
+        output.className = "run-output";
+        output.textContent = "Running " + select.value + "…";
+
+        try {
+          const res = await fetch("/api/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              agentId: agent.id,
+              command: select.value,
+              clientId: currentClientId,
+              mock: mockBox.checked,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok){
+            output.className = "run-output error";
+            output.textContent = data.error || "Run failed.";
+          } else {
+            const ok = data.exitCode === 0;
+            output.className = "run-output " + (ok ? "ok" : "error");
+            output.textContent =
+              `exit code ${data.exitCode}\n\n` +
+              (data.stdout || "") +
+              (data.stderr ? "\n" + data.stderr : "");
+          }
+        } catch {
+          output.className = "run-output error";
+          output.textContent = "Couldn't reach the local server. Is web/server.py running?";
+        }
+
+        runBtn.disabled = false;
+        runBtn.textContent = "Run";
+      });
+    }
+  }
+
   return card;
 }
 
@@ -586,5 +689,5 @@ function initTheme(){
 
 initTheme();
 render();
-Promise.all([loadClients(), loadAutoStatus()]).then(render);
+Promise.all([loadClients(), loadAutoStatus(), loadAgents()]).then(render);
 </script>

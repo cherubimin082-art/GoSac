@@ -1,0 +1,5 @@
+# Per-client scaffolded config folders are generated (and can end up
+# holding a real client's credentials paths) - never commit them.
+# The registry itself is just names/ids/timestamps, safe to track.
+clients/*/
+!clients/registry.json

@@ -1,0 +1,10 @@
+{
+  "clients": [
+    {
+      "id": "gosac",
+      "name": "GoSac / Chirantana",
+      "createdAt": "2026-11-18T00:00:00+00:00",
+      "default": true
+    }
+  ]
+}

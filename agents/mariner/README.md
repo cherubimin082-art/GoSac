@@ -68,11 +68,42 @@ python mariner_agent.py run daily --mock
   Wiring a real alert is the natural next step once you're running this
   unattended.
 
+## Multi-client platform (`client_registry.py`)
+The fleet isn't hardcoded to GoSac anymore. Every other client gets their
+own config.yaml per agent, scaffolded by copying each agent's current
+config.yaml as a starting template - same placeholders, same schema, just
+a separate file, so no agent's code had to change.
+
+- GoSac/Chirantana is special-cased as client id `"gosac"`: it keeps using
+  each agent's existing `agents/<agent>/config.yaml` directly, exactly as
+  already built and tested. Adding this system didn't move anything.
+- A new client's configs live at `clients/<client_id>/<agent>/config.yaml`.
+- `clients/registry.json` is the source of truth for which clients exist.
+
+Add a client from Python directly:
+```python
+from client_registry import add_client
+add_client("Acme Produce Co")
+```
+Or through the dashboard's **"+ Add client"** button, which calls the same
+function via `web/server.py`'s API (see `web/README` section below).
+
+**Confirmed by test:** scaffolding a client created all 8 agents' config
+folders correctly; giving that client a real-looking IndiaMART key and
+re-running `connection_status.py` showed it as connected while GoSac
+stayed untouched - proving the isolation is real, not just structural.
+
+**What this does NOT do yet:** `mariner_agent.py run <schedule>` still
+only runs GoSac's agents - its job manifest doesn't yet take a `--client`
+flag to run another client's configs. That's the natural next step once
+a second client actually has real credentials worth running against.
+
 ## Automatic connection status (`connection_status.py`)
-Checks every agent's `config.yaml` for real (non-placeholder) credentials
-and writes `connection_status.json` - the file the GoSac Mission Control
-dashboard reads to show "Connected" automatically, instead of relying on
-someone to click "Mark connected."
+Checks every **registered client's** `config.yaml` files for real
+(non-placeholder) credentials and writes `connection_status.json` - the
+file the GoSac Mission Control dashboard reads to show "Connected"
+automatically, instead of relying on someone to click "Mark connected."
+Output is keyed by client, so each client's status is independent.
 
 ```bash
 python connection_status.py

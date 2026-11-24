@@ -62,6 +62,41 @@ a{color:var(--accent)}
 }
 .theme-toggle:hover{border-color:var(--accent)}
 
+.clients-bar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:18px;
+  padding-top:16px; border-top:1px solid var(--rail-border);
+}
+.client-chip{
+  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer;
+  border:1px solid var(--rail-border); background:transparent; color:var(--rail-muted);
+  border-radius:999px; padding:6px 14px;
+}
+.client-chip.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.client-chip:hover:not(.active){border-color:var(--accent); color:var(--rail-fg)}
+
+.add-client-btn{
+  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer;
+  border:1px dashed var(--rail-border); background:transparent; color:var(--rail-muted);
+  border-radius:999px; padding:6px 14px;
+}
+.add-client-btn:hover{border-color:var(--accent); color:var(--rail-fg)}
+
+.add-client-form{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+}
+.add-client-form input{
+  font:inherit; font-size:0.82rem; padding:6px 12px; border-radius:999px;
+  border:1px solid var(--rail-border); background:rgba(255,255,255,0.04); color:var(--rail-fg);
+  min-width:180px;
+}
+.add-client-form input::placeholder{color:var(--rail-muted)}
+.add-client-form button{
+  font:inherit; font-size:0.82rem; font-weight:600; cursor:pointer; border-radius:999px;
+  padding:6px 14px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-fg);
+}
+.add-client-form .cancel{background:transparent; border-color:var(--rail-border); color:var(--rail-muted)}
+.clients-note{color:var(--rail-muted); font-size:0.78rem; width:100%; margin-top:4px}
+
 .kpis{display:flex; flex-wrap:wrap; gap:12px; margin-top:20px}
 .kpi{
   background:rgba(255,255,255,0.04); border:1px solid var(--rail-border); border-radius:11px;
@@ -169,11 +204,13 @@ footer a{color:var(--accent)}
         </div>
         <div>
           <h1>GoSac Mission Control</h1>
-          <p class="sub">Chirantana &amp; GoSac &middot; automation fleet console</p>
+          <p class="sub" id="client-sub">Chirantana &amp; GoSac &middot; automation fleet console</p>
         </div>
       </div>
       <button class="theme-toggle" id="theme-toggle">Dark / Light</button>
     </div>
+
+    <div class="clients-bar" id="clients-bar"></div>
 
     <div class="kpis">
       <div class="kpi"><div class="n" id="kpi-built">&mdash;</div><div class="l">Agents built</div></div>
@@ -196,8 +233,13 @@ footer a{color:var(--accent)}
   </div>
 
   <footer>
+    This console is a multi-client platform: each client in the bar above has their own set of agent configs and
+    connection status, kept fully separate. Switch clients with the chips above; "+ Add client" works only in the
+    local console (<code>python web/server.py</code>), since adding a client scaffolds real config folders on disk
+    and this published page has no backend to do that.
+    <br><br>
     This console shows build and connection status only &mdash; it has no backend, so it can't run an agent's code itself.
-    Most platforms show "Auto-detected" status: Mariner's <code>connection_status.py</code> checks each agent's
+    Most platforms show "Auto-detected" status: Mariner's <code>connection_status.py</code> checks each client's
     config.yaml for real (non-placeholder) credentials, and this page reads that result &mdash; no manual click needed,
     and no live API call happens just from loading this page. A platform without that signal (like Beacon's Looker
     Studio connector, set up manually in its own UI) still uses the "Mark connected" toggle, which stays on this device only.
@@ -265,24 +307,131 @@ function saveState(state){
 }
 
 let state = loadState();
-let autoStatus = {};
+let statusByClient = {};   // { clientId: { "agent::Platform": bool } }
 let autoStatusAt = null;
+
+let clients = [{ id: "gosac", name: "GoSac / Chirantana", default: true }];
+let currentClientId = "gosac";
+let backendAvailable = false;
+let addingClient = false;
 
 async function loadAutoStatus(){
   try {
     const res = await fetch("connection_status.json", { cache: "no-store" });
     if (res.ok){
       const data = await res.json();
-      autoStatus = data.status || {};
+      statusByClient = data.clients || {};
       autoStatusAt = data.generated_at || null;
     }
   } catch { /* no status file reachable — every platform falls back to manual */ }
 }
 
+async function loadClients(){
+  try {
+    const res = await fetch("/api/clients", { cache: "no-store" });
+    if (res.ok){
+      const data = await res.json();
+      clients = data.clients || clients;
+      backendAvailable = true;
+      return;
+    }
+  } catch { /* no local backend — this is the read-only (e.g. published) view */ }
+  // Fall back to a co-located static snapshot, if one was published alongside this page.
+  try {
+    const res = await fetch("clients.json", { cache: "no-store" });
+    if (res.ok){
+      const data = await res.json();
+      clients = data.clients || clients;
+    }
+  } catch { /* stick with the single built-in GoSac entry */ }
+}
+
 function platformKey(agentId, platformName){ return agentId + "::" + platformName; }
 function agentById(id){ return AGENTS.find(a => a.id === id); }
-function isAutoTracked(key){ return Object.prototype.hasOwnProperty.call(autoStatus, key); }
-function isConnected(key){ return isAutoTracked(key) ? !!autoStatus[key] : !!state[key]; }
+function isAutoTracked(key){
+  const clientStatus = statusByClient[currentClientId] || {};
+  return Object.prototype.hasOwnProperty.call(clientStatus, key);
+}
+function isConnected(key){
+  const clientStatus = statusByClient[currentClientId] || {};
+  return isAutoTracked(key) ? !!clientStatus[key] : !!state[currentClientId + "::" + key];
+}
+
+function renderClientsBar(){
+  const el = document.getElementById("clients-bar");
+  el.innerHTML = "";
+
+  clients.forEach(c => {
+    const chip = document.createElement("button");
+    chip.className = "client-chip" + (c.id === currentClientId ? " active" : "");
+    chip.textContent = c.name;
+    chip.addEventListener("click", () => {
+      currentClientId = c.id;
+      addingClient = false;
+      render();
+    });
+    el.appendChild(chip);
+  });
+
+  const activeClient = clients.find(c => c.id === currentClientId) || clients[0];
+  document.getElementById("client-sub").textContent =
+    `${activeClient ? activeClient.name : "GoSac"} · automation fleet console`;
+
+  if (!backendAvailable){
+    const note = document.createElement("span");
+    note.className = "clients-note";
+    note.textContent = "Adding clients needs the local console: run \"python web/server.py\" on your machine.";
+    el.appendChild(note);
+    return;
+  }
+
+  if (addingClient){
+    const form = document.createElement("span");
+    form.className = "add-client-form";
+    form.innerHTML = `
+      <input type="text" id="new-client-name" placeholder="Client name" maxlength="80">
+      <button type="button" id="save-client">Add</button>
+      <button type="button" class="cancel" id="cancel-client">Cancel</button>
+    `;
+    el.appendChild(form);
+    document.getElementById("new-client-name").focus();
+
+    document.getElementById("save-client").addEventListener("click", async () => {
+      const input = document.getElementById("new-client-name");
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      try {
+        const res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        if (!res.ok){
+          alert(data.error || "Couldn't add that client.");
+          return;
+        }
+        addingClient = false;
+        await loadClients();
+        currentClientId = data.client.id;
+        await loadAutoStatus();
+        render();
+      } catch {
+        alert("Couldn't reach the local server. Is web/server.py running?");
+      }
+    });
+    document.getElementById("cancel-client").addEventListener("click", () => {
+      addingClient = false;
+      render();
+    });
+  } else {
+    const addBtn = document.createElement("button");
+    addBtn.className = "add-client-btn";
+    addBtn.textContent = "+ Add client";
+    addBtn.addEventListener("click", () => { addingClient = true; render(); });
+    el.appendChild(addBtn);
+  }
+}
 
 function renderSchedule(){
   const el = document.getElementById("schedule");
@@ -345,7 +494,7 @@ function renderCard(agent){
       row.className = "platform-row";
       const statusHtml = auto
         ? `<span class="pill ${connected ? 'good' : 'pending'}" title="Detected from real credentials in this agent's config.yaml">${connected ? "Auto-detected ✓" : "Not detected yet"}</span>`
-        : `<button class="toggle" data-key="${key}">${connected ? "Connected ✓" : "Mark connected"}</button>`;
+        : `<button class="toggle" data-key="${currentClientId}::${key}">${connected ? "Connected ✓" : "Mark connected"}</button>`;
       row.innerHTML = `
         <span class="platform-name">${p.name}</span>
         <span class="platform-actions">
@@ -405,6 +554,7 @@ function wireButtons(){
 }
 
 function render(){
+  renderClientsBar();
   renderKpis();
   renderSchedule();
   renderPillars();
@@ -436,5 +586,5 @@ function initTheme(){
 
 initTheme();
 render();
-loadAutoStatus().then(render);
+Promise.all([loadClients(), loadAutoStatus()]).then(render);
 </script>

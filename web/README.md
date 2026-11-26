@@ -21,6 +21,11 @@ Serves the dashboard at http://localhost:8080 and the API it needs:
   agent's command as a real subprocess (e.g. `python sonar_agent.py
   verify --config clients/<id>/sonar/config.yaml --mock`) and returns its
   exit code, stdout and stderr
+- `GET /api/oauth/google/start?agentId=current&clientId=...` — redirects
+  to Google's real OAuth consent screen (Google Ads only — see below)
+- `GET /api/oauth/google/callback` — Google redirects here after consent;
+  exchanges the code for a refresh token and writes it into that client's
+  `google-ads.yaml`
 
 Each agent card on the dashboard has a **Run** control once the backend
 is up: pick a command, leave "mock" checked (or uncheck it once real
@@ -41,6 +46,41 @@ python ../agents/mariner/connection_status.py
 ```
 This writes `connection_status.json` here, which the dashboard fetches
 automatically on load.
+
+## Real Google OAuth ("Connect (real sign-in)")
+Scoped to **Current (Google Ads) only** — Sonar (GA4) uses a service
+account file, not user OAuth, so there's no consent screen to automate
+for it.
+
+**One-time setup:** create `web/google_oauth_client.json` (gitignored,
+never commit it):
+```json
+{
+  "client_id": "YOUR_ID.apps.googleusercontent.com",
+  "client_secret": "YOUR_SECRET",
+  "redirect_uri": "http://localhost:8080/api/oauth/google/callback"
+}
+```
+That OAuth client must be type **Web application** in Google Cloud
+Console, with `http://localhost:8080/api/oauth/google/callback` added as
+an authorized redirect URI — a **Desktop app** client (the kind used for
+the manual `generate_user_credentials.py` script) won't work here, since
+that type doesn't support a custom web redirect.
+
+**What happens when you click Connect:** real redirect to Google's
+consent screen → you approve → Google redirects back here → the server
+exchanges the code for a refresh token and writes it straight into that
+client's `google-ads.yaml` (creating it if it doesn't exist yet,
+preserving `developer_token`/`login_customer_id` if already set — OAuth
+can't produce those two, you still fill them in by hand).
+
+**Confirmed by test:** the `/start` redirect builds a correct, complete
+Google OAuth URL (verified client_id, redirect_uri, scope, state all
+present and correctly encoded); `/callback` correctly rejects a missing
+code, and correctly surfaces a Google-side error (e.g. `access_denied`)
+instead of swallowing it. The actual token exchange requires a real
+browser consent round-trip, so that step itself is unverified until you
+click through it for real.
 
 ## Files
 - `index.html` — the dashboard page (full standalone copy of

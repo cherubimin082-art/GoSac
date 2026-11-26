@@ -330,7 +330,7 @@ const AGENTS = [
   { id:"coral", name:"Coral", role:"IndiaMART catalog rewrites and lead routing.",
     built:true, schedule:"Frequent", platforms:[{ name:"IndiaMART Seller Panel", url:"https://seller.indiamart.com" }] },
   { id:"current", name:"Current", role:"Google Ads campaign build and daily bid tuning.",
-    built:true, schedule:"Daily", platforms:[{ name:"Google Ads", url:"https://ads.google.com" }] },
+    built:true, schedule:"Daily", platforms:[{ name:"Google Ads", url:"https://ads.google.com", oauth:"google" }] },
   { id:"harbor", name:"Harbor", role:"Amazon Brand Storefront and Flipkart Seller Portal setup.",
     built:true, schedule:"Weekly", platforms:[
       { name:"Amazon Seller Central", url:"https://sellercentral.amazon.in" },
@@ -567,10 +567,14 @@ function renderCard(agent){
       const statusHtml = auto
         ? `<span class="pill ${connected ? 'good' : 'pending'}" title="Detected from real credentials in this agent's config.yaml">${connected ? "Auto-detected ✓" : "Not detected yet"}</span>`
         : `<button class="toggle" data-key="${currentClientId}::${key}">${connected ? "Connected ✓" : "Mark connected"}</button>`;
+      const connectHref = (p.oauth === "google" && backendAvailable)
+        ? `/api/oauth/google/start?agentId=${encodeURIComponent(agent.id)}&clientId=${encodeURIComponent(currentClientId)}`
+        : p.url;
+      const connectLabel = (p.oauth === "google" && backendAvailable) ? "Connect (real sign-in)" : "Connect";
       row.innerHTML = `
         <span class="platform-name">${p.name}</span>
         <span class="platform-actions">
-          <a class="connect" href="${p.url}" target="_blank" rel="noopener">Connect</a>
+          <a class="connect" href="${connectHref}" target="_blank" rel="noopener">${connectLabel}</a>
           ${statusHtml}
         </span>
       `;

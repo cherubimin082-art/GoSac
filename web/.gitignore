@@ -1,3 +1,4 @@
 .vercel
 server.log
 connection_status.json
+google_oauth_client.json

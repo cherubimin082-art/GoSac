@@ -22,8 +22,20 @@ B2B Google Search Ads.
 1. A Google Ads **Manager (MCC) account** linked to Chirantana's Ads account
    (task CH-01 — this is the human-gated step).
 2. A Google Ads API **developer token**, approved for the manager account.
-3. OAuth2 credentials (Client ID + Secret) from Google Cloud Console, plus a
-   refresh token for the account with access.
+3. OAuth2 credentials and a refresh token for the account with access — get
+   these the easy way (below) or the manual way:
+   - **Easy way: one-click Connect.** The dashboard's "Connect (real
+     sign-in)" button for Google Ads runs a real OAuth flow and writes the
+     refresh token straight into `google-ads.yaml` for you. Needs
+     `web/google_oauth_client.json` set up once (see `web/README.md`) — a
+     Google Cloud OAuth client of type **Web application**, with
+     `http://localhost:8080/api/oauth/google/callback` as an authorized
+     redirect URI. `developer_token` and `login_customer_id` still can't
+     come from OAuth — you fill those in by hand afterward.
+   - **Manual way:** generate a refresh token yourself with Google's
+     `generate_user_credentials.py` script (a **Desktop app** type OAuth
+     client, different from the Web application one above), then build
+     `google-ads.yaml` by hand.
 4. A `google-ads.yaml` file with those credentials, **including
    `use_proto_plus: True`** (this build's code uses proto-plus style field
    access throughout — `client.get_type(...)`'s objects, `criterion.keyword.text = ...`

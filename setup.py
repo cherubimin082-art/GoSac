@@ -11,12 +11,16 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent
 AGENTS_DIR = ROOT_DIR / "agents"
+WEB_DIR = ROOT_DIR / "web"
 
 
 def main():
     requirement_files = sorted(AGENTS_DIR.glob("*/requirements.txt"))
+    web_requirements = WEB_DIR / "requirements.txt"
+    if web_requirements.exists():
+        requirement_files.append(web_requirements)
     if not requirement_files:
-        print("setup: no agent requirements.txt files found - is this the right folder?")
+        print("setup: no requirements.txt files found - is this the right folder?")
         sys.exit(1)
 
     print(f"setup: installing dependencies for {len(requirement_files)} agent(s)...\n")

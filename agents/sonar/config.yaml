@@ -1,17 +1,14 @@
-# Sonar Agent config — fill these in once Chirantana grants GA4 access (task CH-01).
 ga4:
-  property_id: "REPLACE_WITH_GA4_PROPERTY_ID"      # e.g. "123456789", no "properties/" prefix
-  credentials_path: "REPLACE_WITH_SERVICE_ACCOUNT_JSON_PATH"
-
+  property_id: REPLACE_WITH_GA4_PROPERTY_ID
+  credentials_path: C:\Users\pc\Documents\Gosac\agents\sonar\ga4-oauth-credentials.json
 events_to_track:
-  - name: rfq_form_submit
-    description: RFQ form submitted on chirantana.net or getgosac.com
-  - name: call_click
-    description: Click-to-call button clicked
-  - name: whatsapp_click
-    description: WhatsApp chat button clicked
-  - name: spec_download
-    description: Product spec sheet / PDF downloaded
-
+- name: rfq_form_submit
+  description: RFQ form submitted on chirantana.net or getgosac.com
+- name: call_click
+  description: Click-to-call button clicked
+- name: whatsapp_click
+  description: WhatsApp chat button clicked
+- name: spec_download
+  description: Product spec sheet / PDF downloaded
 verification:
   lookback_days: 1

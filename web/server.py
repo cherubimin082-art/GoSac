@@ -53,6 +53,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "agents" / "mariner"))
 import client_registry  # noqa: E402
+import connection_status  # noqa: E402
 
 WEB_DIR = Path(__file__).parent
 AGENTS_DIR = WEB_DIR.parent / "agents"
@@ -258,7 +259,7 @@ class Handler(SimpleHTTPRequestHandler):
     def _send_html(self, status: int, html: str):
         body = html.encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -315,11 +316,25 @@ class Handler(SimpleHTTPRequestHandler):
                     )
                     return
                 saved_path, note = save_google_oauth_tokens(agent_id, client_id, refresh_token)
+
+                # Refresh the dashboard's status file right away, so the
+                # next time that tab reloads, "Connected" is already there
+                # instead of needing someone to run this by hand.
+                status_note = ""
+                try:
+                    connection_status.main()
+                except Exception as exc:
+                    status_note = (f"<p>(Credential saved, but the dashboard's status file "
+                                    f"couldn't auto-refresh: {exc} — run "
+                                    f"<code>python agents/mariner/connection_status.py</code> "
+                                    f"by hand.)</p>")
+
                 self._send_html(200, f"""
                     <p>{agent_id} connected for client "{client_id}".</p>
                     <p>Refresh token saved to <code>{saved_path}</code>.</p>
                     <p>{note}</p>
-                    <p>You can close this tab and go back to the dashboard.</p>
+                    {status_note}
+                    <p>Reload the dashboard tab and it should already show "Connected".</p>
                 """)
             except ValueError as exc:
                 self._send_html(400, f"<p>{exc}</p>")

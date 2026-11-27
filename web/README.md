@@ -22,10 +22,12 @@ Serves the dashboard at http://localhost:8080 and the API it needs:
   verify --config clients/<id>/sonar/config.yaml --mock`) and returns its
   exit code, stdout and stderr
 - `GET /api/oauth/google/start?agentId=current&clientId=...` — redirects
-  to Google's real OAuth consent screen (Google Ads only — see below)
+  to Google's real OAuth consent screen (`agentId` is `current` for
+  Google Ads or `sonar` for GA4 — see below)
 - `GET /api/oauth/google/callback` — Google redirects here after consent;
   exchanges the code for a refresh token and writes it into that client's
-  `google-ads.yaml`
+  credentials file (`google-ads.yaml` for Current, `ga4-oauth-credentials.json`
+  for Sonar)
 
 Each agent card on the dashboard has a **Run** control once the backend
 is up: pick a command, leave "mock" checked (or uncheck it once real
@@ -48,9 +50,11 @@ This writes `connection_status.json` here, which the dashboard fetches
 automatically on load.
 
 ## Real Google OAuth ("Connect (real sign-in)")
-Scoped to **Current (Google Ads) only** — Sonar (GA4) uses a service
-account file, not user OAuth, so there's no consent screen to automate
-for it.
+Covers both **Current (Google Ads)** and **Sonar (GA4)** — both of
+Google's APIs accept a signed-in user's OAuth credentials directly, as
+long as that account has access to the Ads account / GA4 property. One
+shared OAuth client handles both; `GOOGLE_OAUTH_SCOPES` in `server.py`
+picks the right scope (`adwords` or `analytics`) per agent.
 
 **One-time setup:** create `web/google_oauth_client.json` (gitignored,
 never commit it):
@@ -70,17 +74,25 @@ that type doesn't support a custom web redirect.
 **What happens when you click Connect:** real redirect to Google's
 consent screen → you approve → Google redirects back here → the server
 exchanges the code for a refresh token and writes it straight into that
-client's `google-ads.yaml` (creating it if it doesn't exist yet,
-preserving `developer_token`/`login_customer_id` if already set — OAuth
-can't produce those two, you still fill them in by hand).
+client's credentials file:
+- **Current:** `google-ads.yaml` (creating it if it doesn't exist yet,
+  preserving `developer_token`/`login_customer_id` if already set — OAuth
+  can't produce those two, you still fill them in by hand)
+- **Sonar:** `ga4-oauth-credentials.json` (you still need to fill in the
+  real `ga4.property_id` in `config.yaml` — OAuth proves who you are, not
+  which GA4 property you mean)
 
 **Confirmed by test:** the `/start` redirect builds a correct, complete
-Google OAuth URL (verified client_id, redirect_uri, scope, state all
-present and correctly encoded); `/callback` correctly rejects a missing
-code, and correctly surfaces a Google-side error (e.g. `access_denied`)
-instead of swallowing it. The actual token exchange requires a real
-browser consent round-trip, so that step itself is unverified until you
-click through it for real.
+Google OAuth URL for both agents (verified client_id, redirect_uri,
+per-agent scope, and state all present and correctly encoded, with
+`current` getting the `adwords` scope and `sonar` getting the
+`analytics` scope); an unsupported `agentId` fails with a clean error
+instead of a crash; `/callback` correctly rejects a missing code, and
+correctly surfaces a Google-side error (e.g. `access_denied`) instead of
+swallowing it. Sonar's credential auto-detection (OAuth file vs. service
+account file) was also verified directly against both file shapes. The
+actual token exchange requires a real browser consent round-trip, so
+that step itself is unverified until you click through it for real.
 
 ## Files
 - `index.html` — the dashboard page (full standalone copy of

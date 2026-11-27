@@ -14,16 +14,20 @@ POST /api/run {agentId, command, clientId, mock} -> actually run that
                              return its output + exit code
 GET  /api/oauth/google/start?agentId=current&clientId=gosac
                              -> redirects to Google's real OAuth consent
-                                screen for Google Ads access
+                                screen (Google Ads or GA4 scope,
+                                depending on agentId)
 GET  /api/oauth/google/callback
                              -> Google redirects here after consent;
                                 exchanges the code for a refresh token
                                 and writes it straight into that
-                                client's google-ads.yaml
+                                client's credentials file
 
-The Google OAuth flow is scoped to Current (Google Ads) only - Sonar
-(GA4) authenticates with a service account file, not user OAuth, so
-there's no consent screen for it to automate.
+Covers Current (Google Ads) and Sonar (GA4) - both of Google's APIs
+accept a signed-in user's OAuth credentials directly, as long as that
+Google account has access to the Ads account / GA4 property. Sonar's
+README still documents the service-account route as an alternative,
+since some setups prefer a credential that doesn't belong to a
+specific person.
 
 This is a local-only tool: it has no auth, binds to localhost by
 default, and is meant to run on your own machine while you use the
@@ -53,7 +57,14 @@ import client_registry  # noqa: E402
 WEB_DIR = Path(__file__).parent
 AGENTS_DIR = WEB_DIR.parent / "agents"
 OAUTH_CLIENT_PATH = WEB_DIR / "google_oauth_client.json"
-GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
+
+# Which Google scope each OAuth-capable agent needs. analytics (not
+# analytics.readonly) is used for Sonar so the same signed-in session can
+# both create conversion events (Admin API) and read them back (Data API).
+GOOGLE_OAUTH_SCOPES = {
+    "current": "https://www.googleapis.com/auth/adwords",
+    "sonar": "https://www.googleapis.com/auth/analytics",
+}
 
 # Each agent's script and the commands it actually supports, exactly as
 # defined in its own argparse. Mock mode is passed uniformly when
@@ -111,13 +122,15 @@ def load_oauth_client() -> dict:
 
 
 def build_google_auth_url(agent_id: str, client_id: str) -> str:
+    if agent_id not in GOOGLE_OAUTH_SCOPES:
+        raise ValueError(f"Google OAuth isn't wired up for '{agent_id}'.")
     oauth_client = load_oauth_client()
     state = f"{agent_id}|{client_id}"
     params = {
         "client_id": oauth_client["client_id"],
         "redirect_uri": oauth_client["redirect_uri"],
         "response_type": "code",
-        "scope": GOOGLE_ADS_SCOPE,
+        "scope": GOOGLE_OAUTH_SCOPES[agent_id],
         "access_type": "offline",
         "prompt": "consent",
         "state": state,
@@ -183,6 +196,52 @@ def save_google_ads_refresh_token(client_id: str, agent_id: str, refresh_token: 
     return yaml_path
 
 
+def save_ga4_refresh_token(client_id: str, agent_id: str, refresh_token: str) -> Path:
+    """Writes an OAuth-user-credentials file for Sonar (GA4) — a lighter
+    alternative to a service account JSON. sonar_agent.py's get_credentials
+    detects this shape (it has a refresh_token field) and authenticates as
+    the signed-in user instead of a service account."""
+    oauth_client = load_oauth_client()
+    config_path = client_registry.client_config_path(client_id, agent_id)
+    creds_path = config_path.parent / "ga4-oauth-credentials.json"
+
+    creds = {
+        "client_id": oauth_client["client_id"],
+        "client_secret": oauth_client["client_secret"],
+        "refresh_token": refresh_token,
+        "token_uri": "https://oauth2.googleapis.com/token",
+    }
+    with open(creds_path, "w", encoding="utf-8") as f:
+        json.dump(creds, f, indent=2)
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        agent_config = yaml.safe_load(f)
+    current_path = agent_config.get("ga4", {}).get("credentials_path", "")
+    if not current_path or current_path.startswith("REPLACE_WITH"):
+        agent_config["ga4"]["credentials_path"] = str(creds_path)
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(agent_config, f, sort_keys=False)
+
+    return creds_path
+
+
+def save_google_oauth_tokens(agent_id: str, client_id: str, refresh_token: str) -> tuple[Path, str]:
+    """Dispatches to the right save routine for this agent and returns
+    (path written, a human note about what's still needed)."""
+    if agent_id == "current":
+        path = save_google_ads_refresh_token(client_id, agent_id, refresh_token)
+        note = ("Still needed before Current can run for real: a real "
+                "<code>developer_token</code> and <code>login_customer_id</code> in that "
+                "same file — OAuth can't produce those.")
+        return path, note
+    if agent_id == "sonar":
+        path = save_ga4_refresh_token(client_id, agent_id, refresh_token)
+        note = ("Still needed: a real <code>ga4.property_id</code> in config.yaml — OAuth "
+                "proves who you are, not which GA4 property you mean.")
+        return path, note
+    raise ValueError(f"Google OAuth isn't wired up for '{agent_id}'.")
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_DIR), **kwargs)
@@ -223,9 +282,6 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/oauth/google/start":
             agent_id = (query.get("agentId") or [""])[0]
             client_id = (query.get("clientId") or ["gosac"])[0]
-            if agent_id != "current":
-                self._send_html(400, "<p>Google OAuth is only wired up for Current (Google Ads).</p>")
-                return
             try:
                 auth_url = build_google_auth_url(agent_id, client_id)
                 self.send_response(302)
@@ -258,13 +314,11 @@ class Handler(SimpleHTTPRequestHandler):
                         "myaccount.google.com/permissions</a> and try Connect again.</p>",
                     )
                     return
-                yaml_path = save_google_ads_refresh_token(client_id, agent_id, refresh_token)
+                saved_path, note = save_google_oauth_tokens(agent_id, client_id, refresh_token)
                 self._send_html(200, f"""
-                    <p>Google Ads connected for client "{client_id}".</p>
-                    <p>Refresh token saved to <code>{yaml_path}</code>.</p>
-                    <p>Still needed before Current can run for real: a real
-                    <code>developer_token</code> and <code>login_customer_id</code> in that
-                    same file — OAuth can't produce those.</p>
+                    <p>{agent_id} connected for client "{client_id}".</p>
+                    <p>Refresh token saved to <code>{saved_path}</code>.</p>
+                    <p>{note}</p>
                     <p>You can close this tab and go back to the dashboard.</p>
                 """)
             except ValueError as exc:

@@ -6,8 +6,17 @@ What it does:
   2. Verifies the events actually fired in the lookback window.
   3. Prints a one-line summary suitable for a daily/weekly log.
 
-Run once after GA4 access is granted (service account added to the property),
-then re-run `verify` on a schedule to confirm tracking stays healthy.
+Run once after GA4 access is granted, then re-run `verify` on a schedule
+to confirm tracking stays healthy. Access can come two ways — both
+produce a JSON file at ga4.credentials_path, and get_credentials below
+auto-detects which one it's looking at:
+  - A service account key file (added as a user on the GA4 property) —
+    the original, still-supported route, good for a credential that
+    doesn't belong to a specific person.
+  - An OAuth user-credentials file (client_id/client_secret/refresh_token)
+    written automatically by the dashboard's "Connect (real sign-in)"
+    button — the signed-in Google account just needs its own access to
+    the GA4 property, no separate service account required.
 
 Use --mock to run the full setup/verify flow against fake data, with no
 GA4 credentials or API packages required — useful to see the agent work
@@ -15,6 +24,7 @@ before real access exists.
 """
 
 import argparse
+import json
 import random
 import sys
 from pathlib import Path
@@ -28,9 +38,23 @@ def load_config(config_path: str) -> dict:
 
 
 def get_credentials(credentials_path: str):
+    with open(credentials_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if "refresh_token" in data:
+        from google.oauth2.credentials import Credentials
+
+        return Credentials(
+            token=None,
+            refresh_token=data["refresh_token"],
+            token_uri=data.get("token_uri", "https://oauth2.googleapis.com/token"),
+            client_id=data["client_id"],
+            client_secret=data["client_secret"],
+        )
+
     from google.oauth2 import service_account
 
-    return service_account.Credentials.from_service_account_file(credentials_path)
+    return service_account.Credentials.from_service_account_info(data)
 
 
 def register_events(config: dict) -> list[tuple[str, str]]:

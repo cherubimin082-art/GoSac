@@ -1,56 +1,42 @@
-# Current Agent config — fill these in once Google Ads access is granted (task CH-01).
 google_ads:
-  customer_id: "REPLACE_WITH_10_DIGIT_CUSTOMER_ID"   # no dashes, e.g. "1234567890"
-  credentials_path: "REPLACE_WITH_PATH_TO_google-ads.yaml"
-
+  customer_id: REPLACE_WITH_10_DIGIT_CUSTOMER_ID
+  credentials_path: C:\Users\pc\Documents\Gosac\agents\current\google-ads.yaml
 budget:
-  monthly_ceiling_inr: 35000     # hard cap — agent never pushes spend above this
-  max_bid_change_pct: 15         # max single-day bid change per keyword, as a percent
-
+  monthly_ceiling_inr: 35000
+  max_bid_change_pct: 15
 target:
   cost_per_lead_inr: 450
-
 campaign:
-  name: "Chirantana - Industrial Machinery (B2B)"
+  name: Chirantana - Industrial Machinery (B2B)
   seed_keywords:
-    - "semi-automatic clipping machine"
-    - "fruit sorting machine manufacturer"
-    - "bale netting supplier"
-    - "industrial automatic clipping machine supplier india"
-    - "produce mesh bags wholesale"
-  # The ad itself is only created if ALL THREE of these are filled in with
-  # real values. Google Ads requires 3-15 headlines (<=30 chars each) and
-  # 2-4 descriptions (<=90 chars each) for a Responsive Search Ad - left
-  # unfilled, build skips ad creation and clearly says so, same
-  # conservative rule every other agent follows (never invent ad copy).
+  - semi-automatic clipping machine
+  - fruit sorting machine manufacturer
+  - bale netting supplier
+  - industrial automatic clipping machine supplier india
+  - produce mesh bags wholesale
   ad_headlines:
-    - "REPLACE_WITH_HEADLINE_1"
-    - "REPLACE_WITH_HEADLINE_2"
-    - "REPLACE_WITH_HEADLINE_3"
+  - REPLACE_WITH_HEADLINE_1
+  - REPLACE_WITH_HEADLINE_2
+  - REPLACE_WITH_HEADLINE_3
   ad_descriptions:
-    - "REPLACE_WITH_DESCRIPTION_1"
-    - "REPLACE_WITH_DESCRIPTION_2"
-  final_url: "REPLACE_WITH_LANDING_PAGE_URL"   # e.g. https://chirantana.net/clipping-machines
-
-# Queries containing any of these terms are auto-flagged as non-commercial
-# and added as negative keywords. Extend this list as real search-term
-# reports reveal more noise.
+  - REPLACE_WITH_DESCRIPTION_1
+  - REPLACE_WITH_DESCRIPTION_2
+  final_url: REPLACE_WITH_LANDING_PAGE_URL
 negative_signal_terms:
-  - "free"
-  - "pdf"
-  - "download"
-  - "repair manual"
-  - "diy"
-  - "student project"
-  - "tutorial"
-  - "image"
-  - "images"
-  - "salary"
-  - "job"
-  - "jobs"
-  - "price list"
-  - "second hand"
-  - "used"
-
+- free
+- pdf
+- download
+- repair manual
+- diy
+- student project
+- tutorial
+- image
+- images
+- salary
+- job
+- jobs
+- price list
+- second hand
+- used
 verification:
   lookback_days: 1
